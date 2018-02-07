@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# Ignore the images folder
-images/
-
 # Ignore the images
 *.png
 *.jpg

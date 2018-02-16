@@ -9,8 +9,7 @@ image1_name = './images/images_63796657_20180119143035_IMAG0089-100-89.JPG'
 image2_name = './images/images_63796888_20180119143134_IMAG0090-100-90.JPG'
 #image2_name = './images/images_63798188_20180119143733_IMAG0096-100-96.JPG'
 #image2_name = './images/images_63825977_20180119171133_IMAG0250-100-250.JPG'
-img1 = None
-img2 = None
+directory = "C:\\Users\\thisisme1\\Downloads\\Spartan - Cell-20180124T191933Z-001\\Spartan - Cleaned\\"
 
 
 # Verify images have the same size
@@ -18,13 +17,11 @@ img2 = None
 
 
 def valid_images(image1, image2):
-    print("Y, X, Channels: " + str(image1.shape))
-
     if image1.shape != image2.shape:
         print("Unable to process these two images, they are of different dimensions")
+        print("(Y, X, Channels): ", str(image1.shape), str(image2.shape))
         return False
 
-    print("Images the same size, can continue.")
     return True
 
 
@@ -38,75 +35,78 @@ def extract_average_from_region(image, x, y, height, width):
     return avg_color
 
 
-# Create a blank image to write to
-blank_image = None
-
-# loop over all images in directory
-#   Grab 2 images
-#   Subtract them and add to main array
-#   if only 1 image left, ignore for now
-# divide the blank_image by the number of pairs
-directory = './images'
-pairs = 0
-# Load images from folders in loop
-for filename in os.listdir(directory):
-    combined_filename = os.path.join(directory, filename)
-    
-    if img1 is None:
-        img1 = cv2.imread(combined_filename)
-        if img1 is None:
-            print("ERROR: Invalid file, skipping:", combined_filename)
-            continue
-        print(pairs, "Working on new image1", combined_filename)
-        continue
-
-    if img2 is None:
-        img2 = cv2.imread(combined_filename)
-        if img2 is None:
-            print("ERROR: Invalid file, skipping:", combined_filename)
-            continue
-        print(pairs, "Working on new image2", combined_filename)
-
-    pairs += 1
-    if not valid_images(img1, img2):
-        continue
-
-    # Create a blank image to write to
-    if blank_image is None:
-        blank_image = np.zeros((img1.shape[0], img1.shape[1], 3), np.uint64)
+def average_image(source_image, roi_width, roi_height):
+    out_image = np.zeros((source_image.shape[0], source_image.shape[1], 3), np.uint8)
 
     # We can't get the average of the left 10, top 10, right 10, and bottom 10 pixels
-    y_offset = int(avg_height / 2)
-    x_offset = int(avg_width / 2)
+    y_offset = int(roi_height / 2)
+    x_offset = int(roi_width / 2)
 
-    rows = img1.shape[0] - avg_height
-    cols = img1.shape[1] - avg_width
+    rows = source_image.shape[0] - roi_height
+    cols = source_image.shape[1] - roi_width
 
-    # Loop over the entire image, section by section
     for y in range(0, rows):
         for x in range(0, cols):
-            avg_color1 = extract_average_from_region(img1, x, y, avg_height, avg_width)
-            avg_color2 = extract_average_from_region(img2, x, y, avg_height, avg_width)
+            average_color = extract_average_from_region(source_image, x, y, roi_height, roi_width)
+            out_image[y + y_offset, x + x_offset] = average_color
 
-            # Subtract the two colors and that becomes the new color
-            avg_subtracted = np.absolute(np.subtract(avg_color1, avg_color2))
-            blank_image[y+y_offset, x+x_offset] = blank_image[y+y_offset, x+x_offset] + avg_subtracted
+    return out_image
 
-    # Since we are comparing adjacent images, we need img2 and img3
-    # so, move img2 to img1, and force directory processing to grab img3 and toss it in img2.
-    # TODO: Instead, calculate IMG1 average and then afterwards, save that instead of recalculating each loop
-    # TODO: this would mean we do N averages instead of (N*2)-2
-    img1 = img2
-    img2 = None
 
-    # if pairs == 4:
-    #     break
+def average_then_subtract_images(image_directory):
+    out_image = None
+    image1 = None
+    image2 = None
+    pairs = 0
 
-# average the values
-blank_image = blank_image / pairs
+    # Load images from folders in loop
+    for filename in os.listdir(image_directory):
+        combined_filename = os.path.join(image_directory, filename)
 
-# convert back to uint8
-blank_image = blank_image.astype(np.uint8)
+        if image1 is None:
+            image1 = cv2.imread(combined_filename)
+            if image1 is None:
+                print("ERROR: Invalid file, skipping:", combined_filename)
+                continue
+
+            print(pairs, "Working on new image1", combined_filename)
+            image1 = average_image(image1, avg_width, avg_height)
+            continue
+
+        if image2 is None:
+            image2 = cv2.imread(combined_filename)
+            if image2 is None:
+                print("ERROR: Invalid file, skipping:", combined_filename)
+                continue
+
+            print(pairs, "Working on new image2", combined_filename)
+            image2 = average_image(image2, avg_width, avg_height)
+
+        if not valid_images(image1, image2):
+            image2 = None
+            continue
+
+        # Create a blank image to write to
+        if out_image is None:
+            out_image = np.zeros((image1.shape[0], image1.shape[1], 3), np.uint64)
+
+        pairs += 1
+
+        avg_subtracted = np.subtract(image1, image2)
+        out_image = np.add(out_image, avg_subtracted)
+
+        # Set image1 as the blurred (Averaged) image2 so we don't have to re-calculate it
+        # when we compare against "image3"
+        image1 = image2
+        image2 = None
+
+    out_image = out_image / pairs  # average the values
+    out_image = out_image.astype(np.uint8)  # convert back to uint8
+    return out_image
+
+
+# Get the result of the complete averaged series
+blank_image = average_then_subtract_images(directory)
 
 cv2.imwrite('all_combined.png', blank_image)
 

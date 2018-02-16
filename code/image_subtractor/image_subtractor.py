@@ -17,14 +17,15 @@ img2 = None
 # TODO: Maybe resize the larger image to the smaller image??
 
 
-def validate_images(image1, image2):
+def valid_images(image1, image2):
     print("Y, X, Channels: " + str(image1.shape))
 
     if image1.shape != image2.shape:
         print("Unable to process these two images, they are of different dimensions")
-        exit(1)
+        return False
 
     print("Images the same size, can continue.")
+    return True
 
 
 def extract_average_from_region(image, x, y, height, width):
@@ -50,18 +51,25 @@ pairs = 0
 # Load images from folders in loop
 for filename in os.listdir(directory):
     combined_filename = os.path.join(directory, filename)
-
+    
     if img1 is None:
         img1 = cv2.imread(combined_filename)
+        if img1 is None:
+            print("ERROR: Invalid file, skipping:", combined_filename)
+            continue
         print(pairs, "Working on new image1", combined_filename)
         continue
 
     if img2 is None:
         img2 = cv2.imread(combined_filename)
+        if img2 is None:
+            print("ERROR: Invalid file, skipping:", combined_filename)
+            continue
         print(pairs, "Working on new image2", combined_filename)
 
     pairs += 1
-    validate_images(img1, img2)
+    if not valid_images(img1, img2):
+        continue
 
     # Create a blank image to write to
     if blank_image is None:

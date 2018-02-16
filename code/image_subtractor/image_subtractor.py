@@ -11,6 +11,7 @@ image2_name = './images/images_63796888_20180119143134_IMAG0090-100-90.JPG'
 #image2_name = './images/images_63825977_20180119171133_IMAG0250-100-250.JPG'
 directory = "C:\\Users\\thisisme1\\Downloads\\Spartan - Cell-20180124T191933Z-001\\Spartan - Cleaned\\"
 
+directory = './images/'
 
 # Verify images have the same size
 # TODO: Maybe resize the larger image to the smaller image??
@@ -92,35 +93,16 @@ def average_then_subtract_images(image_directory):
 
         pairs += 1
 
-        #avg_subtracted = np.zeros((image1.shape[0], image1.shape[1], 3), np.int16)
-
-        #cv2.subtract(image1, image2, dst=avg_subtracted, dtype=3)
         avg_subtracted = cv2.absdiff(image1, image2)
-        #avg_subtracted = image1 - image2
-        # print(image1[10,10])
-        # print(image2[10,10])
-        # print(avg_subtracted[10,10])
-
         out_image = np.add(out_image, avg_subtracted)
-
-
-
-        # cv2.imshow('image', image1)
-        # cv2.waitKey(0)
-        # cv2.imshow('image', image2)
-        # cv2.waitKey(0)
-        # cv2.imshow('image', avg_subtracted)
-        # cv2.waitKey(0)
-        # cv2.imshow('image', out_image)
-        # cv2.waitKey(0)
 
         # Set image1 as the blurred (Averaged) image2 so we don't have to re-calculate it
         # when we compare against "image3"
         image1 = image2
         image2 = None
 
-        if pairs == 1:
-            break
+        #if pairs == 1:
+        #    break
 
     out_image = out_image / pairs  # average the values
     out_image = out_image.astype(np.uint8)  # convert back to uint8

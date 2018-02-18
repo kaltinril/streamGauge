@@ -11,7 +11,6 @@ image2_name = './images/images_63796888_20180119143134_IMAG0090-100-90.JPG'
 #image2_name = './images/images_63825977_20180119171133_IMAG0250-100-250.JPG'
 directory = "C:\\Users\\thisisme1\\Downloads\\Spartan - Cell-20180124T191933Z-001\\Spartan - Cleaned\\"
 
-directory = './images/'
 
 # Verify images have the same size
 # TODO: Maybe resize the larger image to the smaller image??

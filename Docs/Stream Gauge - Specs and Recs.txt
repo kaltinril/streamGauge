@@ -115,6 +115,8 @@ A binary mask where a 1 at a specific index in the matrix represents water at th
 4.	System Features
 4.1	Image Processing
 4.1.1	Description and Priority
+NOTE: This process is detailed in figures 1-7 in Appendix B.
+
 Analyzing images through the following process:
 1.	Using a low pass filter with temporal differences to generate a mask.
 2.	Use the mask to identify Regions of Interest (ROI).  The mask indicates which type of feature is in the region.

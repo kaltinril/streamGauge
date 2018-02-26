@@ -1,53 +1,58 @@
+
 Software Requirements Specification
 for
 Stream Gauge
-Version 1.0 approved
+Version 2.0 approved
 Prepared by Timothy Harrelson and Jeremy Swartwood
 Capstone Project, UAA
 02/01/2018
  
-
 Table of Contents
-Revision History
-1.	Introduction
-1.1	Purpose
-1.2	Intended Audience and Reading Suggestions
-1.3	Product Scope
-2.	Overall Description
-2.1	Product Perspective
-2.2	Product Functions
-2.3	User Classes and Characteristics
-2.4	Operating Environment
-2.5	Design and Implementation Constraints
-2.6	User Documentation
-2.7	Assumptions and Dependencies
-3.	External Interface Requirements
-3.1	User Interfaces
-4.	System Features
-4.1	Pixel Classification
-5.	Other Nonfunctional Requirements
-5.1	Performance Requirements
-Appendix A: Glossary
+Table of Contents	ii
+Revision History	ii
+1.	Introduction	1
+1.1	Purpose	1
+1.2	Intended Audience and Reading Suggestions	1
+1.3	Product Scope	1
+1.4	References	1
+2.	Overall Description	1
+2.1	Product Perspective	1
+2.2	Product Functions	2
+2.3	User Classes and Characteristics	2
+2.4	Operating Environment	2
+2.5	Design and Implementation Constraints	2
+2.6	User Documentation	2
+2.7	Assumptions and Dependencies	2
+3.	External Interface Requirements	3
+3.1	User Interfaces	3
+3.2	Software Interfaces	3
+4.	System Features	3
+4.1	Image Processing	3
+4.2	Image Classifying	4
+5.	Other Nonfunctional Requirements	4
+5.1	Performance Requirements	4
+5.2	Software Quality Attributes	4
+6.	Other Requirements	5
+Appendix A: Glossary	5
+Appendix B: Figures	5
 
 
 Revision History
 Name	Date	Reason For Changes	Version
+Timothy Harrelson Jeremy Swartwood	02/01/2018	Initial version	1.0
+Timothy Harrelson Jeremy Swartwood	02/25/2018	Add changes from classmates during review.
+Add Figures from Visio diagram.	2.0
 
 
  
 1.	Introduction
 1.1	Purpose 
-
 The purpose of this project is to evaluate an image of a body of water and categorize the pixels as either non-water or water using a machine learning classifier.
-
 1.2	Intended Audience and Reading Suggestions
-
 The intended audience consists of two groups of people.
 •	The sponsor
 •	Development team
-
 1.3	Product Scope
-
 Benefits
 •	This product will make the process of automatically determining the height of water cheaper by only requiring lower quality instruments.
 •	Setup will be easier with a reduction in required infrastructure like a bridge for the audio or visual gauge.
@@ -56,10 +61,10 @@ Benefits
 Objectives
 •	Identify the water pixels from an image.
 •	Gathering and preparing usable data for training and validation.
+1.4	References
 
 
 2.	Overall Description
-
 2.1	Product Perspective
 
 Currently the methods of identifying water height are expensive.  In some instances this requires trained personal to interpret and gather data and survey land.
@@ -67,81 +72,102 @@ Currently the methods of identifying water height are expensive.  In some instan
 This will require much cheaper measuring instruments, less qualified personal, and low maintenance.
 
 2.2	Product Functions
-
 •	The users will enter an image into the product.
 •	The product will return a set of data identifying which pixels are water within the image.
-
 2.3	User Classes and Characteristics
-
 The following groups will use the product:
 •	Researchers at NOAA and USGS
 •	Citizen science organizations
-
 2.4	Operating Environment
-
 Operation will be done on a Windows OS, with limited or non-existent GPU.
-
 2.5	Design and Implementation Constraints
-
-•	This product will be using Python with OpenCV.
-•	Images will be provided in a standard image format such as (jpeg, png, etc).
-•	The software will only run on the Windows OS.
-
+This product will be using Python with OpenCV.  Images will be provided in JPG format.
 2.6	User Documentation
-
 A user manual will be created with the following information:
 •	The input format to the software.
 •	The commands to execute the software.
 •	The output format of the software.
 •	Details of how the software works will be described.
 
-Code will be commented.
-
+All code will be commented.
 2.7	Assumptions and Dependencies
-
 Assumptions:
 •	Python3 installed on the computer with all required modules.
-•	Images must be a reasonable size (4MB) 
+•	Images must be a reasonable size.
 •	Images are assumed to be within a reasonable lighting condition.
-•	Images can be in any standard image format (jpeg, png, etc)
+•	Images can be in any standard image format accepted by OpenCV.
 
 Dependencies:
-•	numpy
+•	Numpy
+o	Used for complex mathematical computations on array in python.
 •	opencv-python
-
+o	Used for image processing and common Computer Vision algorithms.
 
 3.	External Interface Requirements
-
 3.1	User Interfaces
+This product will a Command Line Interface.  There will not be a GUI produced.
+3.2	Software Interfaces
+Inputs:
+Images in a standard image format are expected.
 
-  This product will be a Command Line Interface.  There will not be a GUI produced.
-
-
+Outputs:
+A binary mask where a 1 at a specific index in the matrix represents water at the pixel in the same location in the source image.  Conversely 0 represents non-water.
 4.	System Features
-
-4.1	Pixel Classification
-
+4.1	Image Processing
 4.1.1	Description and Priority
-	Classify sections of an input image (pixels) as either water or non-water.  
-	
+Analyzing images through the following process:
+1.	Using a low pass filter with temporal differences to generate a mask.
+2.	Use the mask to identify Regions of Interest (ROI).  The mask indicates which type of feature is in the region.
+3.	Use a Histogram of Oriented Gradients (HOG) algorithm to extract features from sub-sections of the ROI.
+4.	Use the features from the HOG to train an Artificial Neural Network in an unsupervised fashion.
 4.1.2	Stimulus/Response Sequences
-	
-	User provides an image to the software and gives the command to start the process.
-	
+A user will need to provide a batch of images to the Image Processor and start the process.
 4.1.3	Functional Requirements
-	
+REQ-1:	Images must be all in a single folder, or they will not be processed.
+REQ-2:	Images must be the same dimensions, if not an error will be presented to the user.
+REQ-3:	Images must be taken sequentially in time without large gaps.
+REQ-4:	Images must be named sequentially to match the order taken in time.
+REQ-5:	Images must be of the same site location and taken from the same camera position.
+
+4.2	Image Classifying
+4.2.1	Description and Priority
+	Classify sections of an input image (pixels) as either water or non-water.  
+
+4.2.2	Stimulus/Response Sequences
+	User provides an image to the software and gives the command to start the process.
+4.2.3	Functional Requirements
 REQ-1:	If the host machine does not have software or modules installed an error message will be provided.
 REQ-2:	If an incorrect image format is provided, an error will be presented to the user.
 REQ-3:	If an image is too large or too small, an error will be presented.
 REQ-4:	When complete the software will produce a binary matrix the same size as the input image.  Where each cell of the matrix signifying a pixel as water or not water.
 
-
 5.	Other Nonfunctional Requirements
-
 5.1	Performance Requirements
-
-  Users computers are assumed to be weak, meaning they won't have GPU or high Memory space.
-
-
+User’s computers are assumed to be weak, meaning they won't have GPU or high Memory space.
+5.2	Software Quality Attributes
+Accuracy of pixel classification.
+ 
+6.	Other Requirements
 Appendix A: Glossary
-Pixel Classification – A machine learning algorithm that determines if a pixel falls into a specific category.
+Pixel Classification - A machine learning algorithm that determines if a pixel falls into a specific category.
+HOG - Histogram of Oriented Gradients
+ROI - Regions of Interest
+ANN - Artificial Neural Network
+
+Appendix B: Figures
+
+ 
+Figure 1 – Overview for Image Processing
+
+Figure 2 – Overview for Image Classifying
+
+Figure 3 – Process of applying low-pass filter for Image Processing
+
+Figure 4 – Details regarding the low-pass filter averaging.
+
+Figure 5 – Process of generating an output mask.
+
+Figure 6 – Process to sample sections of an image to generate HOGs for.
+
+Figure 7 – Example on how extracted ROI are turned into HOGs.
+

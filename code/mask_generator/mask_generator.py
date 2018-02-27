@@ -33,29 +33,33 @@ def show_hist_gray(image):
     cv2.waitKey()
 
 
-#averaged_image = cv2.equalizeHist(averaged_image)
+
 # res = np.hstack((averaged_image_bgr,equ)) #stacking images side-by-side
 
 def try_manual_paint_image(image, psudo_mask, split):
+    img = np.asarray(list(image))
+    mask = np.asarray(list(psudo_mask))
 
     ## Assign a different colorf to each image
     for i in range(split):
         color = int(255 / split) * i
-        image[psudo_mask == i] = (24, 24, color)
-        image[psudo_mask == i + 4] = (24, color, 24)
-        image[psudo_mask == i + 8] = (color, 24, 24)
-        image[psudo_mask == i + 12] = (color, 24, color)
+        img[mask == i] = (24, 24, color)
+        img[mask == i + 4] = (24, color, 24)
+        img[mask == i + 8] = (color, 24, 24)
+        img[mask == i + 12] = (color, 24, color)
 
-        image[psudo_mask == 16] = (128, 128, 128)
+        img[mask == 16] = (128, 128, 128)
 
-    cv2.imshow('image', image)
+    cv2.imshow('image', img)
     cv2.waitKey()
+    cv2.destroyAllWindows()
 
-    return image
+    return img
 
 
 
 def try_cc_with_watershed():
+    # https://docs.opencv.org/3.1.0/d3/db4/tutorial_py_watershed.html
     ret, thresh = cv2.threshold(averaged_image,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
 
     # noise removal
@@ -85,8 +89,11 @@ def try_cc_with_watershed():
 
     cv2.imshow('image', markers)
     cv2.waitKey()
+    cv2.destroyAllWindows()
 
 def try_cc_alone():
+    # https://stackoverflow.com/questions/35854197/how-to-use-opencvs-connected-components-with-stats-in-python
+    # https://docs.opencv.org/3.1.0/d3/dc0/group__imgproc__shape.html#gac2718a64ade63475425558aa669a943a
     # Threshold it so it becomes binary
     ret, thresh = cv2.threshold(averaged_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # You need to choose 4 or 8 for connectivity type
@@ -112,8 +119,10 @@ def try_cc_alone():
 
     cv2.imshow('image', labels)
     cv2.waitKey()
+    cv2.destroyAllWindows()
 
 def try_k_means(img_color, K = 4):
+    # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_ml/py_kmeans/py_kmeans_opencv/py_kmeans_opencv.html
 
     Z = img_color.reshape((-1, 3))
 
@@ -139,17 +148,26 @@ def try_k_means(img_color, K = 4):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def try_equalized_Histogram(in_image):
+    out_image = cv2.equalizeHist(in_image)
+    cv2.imshow('image', out_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 
 #try_k_means(averaged_image_bgr, 8)
 try_k_means(averaged_image_bgr, 4)
 #try_k_means(averaged_image_bgr, 2)
 try_cc_alone()
 #show_hist_gray(averaged_image)
-try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
-try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
-try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
-try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
 
+new_image4 = try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
+new_image3 = try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
+new_image2 = try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
+new_image1 = try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
+new_image5 = try_manual_paint_image(new_image4, averaged_image, 2)
+
+try_equalized_Histogram(averaged_image)
 
 # Cleanup
 cv2.destroyAllWindows()

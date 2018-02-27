@@ -37,6 +37,7 @@ def show_hist_gray(image):
 # res = np.hstack((averaged_image_bgr,equ)) #stacking images side-by-side
 
 def try_manual_paint_image(image, psudo_mask, split):
+
     ## Assign a different colorf to each image
     for i in range(split):
         color = int(255 / split) * i
@@ -51,6 +52,8 @@ def try_manual_paint_image(image, psudo_mask, split):
     cv2.waitKey()
 
     return image
+
+
 
 def try_cc_with_watershed():
     ret, thresh = cv2.threshold(averaged_image,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
@@ -80,7 +83,6 @@ def try_cc_with_watershed():
     markers = cv2.watershed(averaged_image_bgr, markers)
     averaged_image_bgr[markers == -1] = [255, 0, 0]
 
-    print(markers)
     cv2.imshow('image', markers)
     cv2.waitKey()
 
@@ -106,14 +108,43 @@ def try_cc_alone():
     print("NumLabels", num_labels)
     print(np.max(labels))
     print(labels.dtype)
-    show_hist_gray(labels)
+    #show_hist_gray(labels)
 
     cv2.imshow('image', labels)
     cv2.waitKey()
 
+def try_k_means(img_color, K = 4):
 
+    Z = img_color.reshape((-1, 3))
+
+    # convert to np.float32
+    Z = np.float32(Z)
+
+    # define criteria, number of clusters(K) and apply kmeans()
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    # Now convert back into uint8, and make original image
+    center = np.uint8(center)
+    res = center[label.flatten()]
+    res2 = res.reshape((img_color.shape))
+
+    # Adjust the colors so we can see them
+    print("Max Value", np.max(res2))
+    max = np.max(res2)
+    res2 = res2 * int(256 / max)
+    print("Max Value", np.max(res2))
+
+    cv2.imshow('res2', res2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+#try_k_means(averaged_image_bgr, 8)
+try_k_means(averaged_image_bgr, 4)
+#try_k_means(averaged_image_bgr, 2)
 try_cc_alone()
-
+#show_hist_gray(averaged_image)
 try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
 try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
 try_manual_paint_image(averaged_image_bgr, averaged_image, 3)

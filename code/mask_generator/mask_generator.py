@@ -97,7 +97,7 @@ def try_cc_alone():
     # Threshold it so it becomes binary
     ret, thresh = cv2.threshold(averaged_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # You need to choose 4 or 8 for connectivity type
-    connectivity = 8
+    connectivity =4
     # Perform the operation
     output = cv2.connectedComponentsWithStats(thresh, connectivity, cv2.CV_32S)
     # Get the results
@@ -155,11 +155,65 @@ def try_equalized_Histogram(in_image):
     cv2.destroyAllWindows()
 
 
+def try_thresholding():
+    #https://docs.opencv.org/3.4.0/d7/d4d/tutorial_py_thresholding.html
+    return None
+
+
+def try_blob_detection(im):
+    # https://www.learnopencv.com/blob-detection-using-opencv-python-c/
+    # https://stackoverflow.com/questions/8076889/how-to-use-opencv-simpleblobdetector
+    # Setup SimpleBlobDetector parameters.
+    params = cv2.SimpleBlobDetector_Params()
+
+    # Change thresholds
+    params.minThreshold = 10
+    params.maxThreshold = 200
+
+    # Filter by Area.
+    params.filterByArea = True
+    params.minArea = 1500
+
+    # Filter by Circularity
+    params.filterByCircularity = True
+    params.minCircularity = 0.1
+
+    # Filter by Convexity
+    params.filterByConvexity = True
+    params.minConvexity = 0.87
+
+    # Filter by Inertia
+    params.filterByInertia = True
+    params.minInertiaRatio = 0.01
+
+    # Create a detector with the parameters
+    detector = cv2.SimpleBlobDetector_create(params)
+
+    # Detect blobs.
+    keypoints = detector.detect(im)
+
+    # Draw detected blobs as red circles.
+    # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures
+    # the size of the circle corresponds to the size of blob
+
+    im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255),
+                                          cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+    # Show blobs
+    cv2.imshow("Keypoints", im_with_keypoints)
+    cv2.waitKey(0)
+
 #try_k_means(averaged_image_bgr, 8)
-try_k_means(averaged_image_bgr, 4)
+try_k_means(averaged_image_bgr, 4) # This looks like the best of the k_means options
 #try_k_means(averaged_image_bgr, 2)
-try_cc_alone()
+try_cc_alone() # Almost?
 #show_hist_gray(averaged_image)
+
+# Doesn't appear to find any blobs
+try_blob_detection(averaged_image_bgr)
+
+# Works sort of, but too many regions
+try_equalized_Histogram(averaged_image)
 
 new_image4 = try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
 new_image3 = try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
@@ -167,7 +221,9 @@ new_image2 = try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
 new_image1 = try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
 new_image5 = try_manual_paint_image(new_image4, averaged_image, 2)
 
-try_equalized_Histogram(averaged_image)
+
+# Maybe we can use dialation to exaggerate the regions?
+# https://docs.opencv.org/master/d9/d61/tutorial_py_morphological_ops.html
 
 # Cleanup
 cv2.destroyAllWindows()

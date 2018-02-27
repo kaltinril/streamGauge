@@ -6,11 +6,9 @@ import numpy as np
 import pickle
 
 
-def create_hog(region_image):
-    raise NotImplementedError
-
 # need to clip total_image to be same size as stability mask before using this function
-def select_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1):
+def select_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1,
+                       orientations=8, pixels_per_cell=(4,4), cells_per_block=(8,8)):
     print("Selecting ROIs")
 
     roi_file = open("hog.data", "w+")
@@ -29,10 +27,11 @@ def select_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                     continue
 
                 # create hog for region
-                hog_info = create_hog(image_region)
+                hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
+                               cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys')
 
                 # save hog info, alongside other relevant info (pixel coords, base image file name)
-                roi_info = (hog_info.dumps(), region_coords, filename)
+                roi_info = (hog_info.dumps(), region_coords, image_filename)
                 pickle.dump(roi_info, roi_file)
 
                 # increment to next region, no overlap of regions within this loop

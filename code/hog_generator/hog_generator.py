@@ -3,14 +3,17 @@ import matplotlib.pyplot as plt
 from skimage.feature import hog
 from skimage import data, color, exposure
 import numpy as np
+import pickle
+
 
 def create_hog(region_image):
     raise NotImplementedError
 
-
-def select_hog_regions(total_iamge, stability_mask, num_classes, region_size, offset_step_x=1, offset_step_y=1):
+# need to clip total_image to be same size as stability mask before using this function
+def select_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1):
     print("Selecting ROIs")
 
+    roi_file = open("hog.data", "w+")
     for cur_offset_x in range(0, region_size[0], offset_step_x):
         for cur_offset_y in range(0, region_size[1], offset_step_y):
             region_coords = (cur_offset_x, cur_offset_y, cur_offset_x+region_size[0], cur_offset_y+region_size[1])
@@ -19,17 +22,23 @@ def select_hog_regions(total_iamge, stability_mask, num_classes, region_size, of
                 masked_region = stability_mask[region_coords[0]:region_coords[2], region_coords[1]:region_coords[3]]
                 image_region = total_iamge[region_coords[0]:region_coords[2], region_coords[1]:region_coords[3]]
 
+                # this can be changed to return counts of each unique entry, so we can calculate percents
                 unique = np.unique(masked_region)
                 if unique.shape[0] > 1 or unique.shape[1] > 1:  # if there is >1 type of mask category in region
                     region_coords += region_size
                     continue
 
                 # create hog for region
-                hog = create_hog(image_region)
+                hog_info = create_hog(image_region)
 
-                # increment to next region, no overlap within this loop, the
+                # save hog info, alongside other relevant info (pixel coords, base image file name)
+                roi_info = (hog_info.dumps(), region_coords, filename)
+                pickle.dump(roi_info, roi_file)
+
+                # increment to next region, no overlap of regions within this loop
                 region_coords += region_size
 
+    roi_file.close()
     raise NotImplementedError
 
 

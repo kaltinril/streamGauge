@@ -7,11 +7,11 @@ import pickle
 
 
 # need to clip total_image to be same size as stability mask before using this function
-def select_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1,
+def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1,
                        orientations=8, pixels_per_cell=(4,4), cells_per_block=(8,8)):
-    print("Selecting ROIs")
+    print("Creating ROI HOGs")
 
-    roi_file = open("hog.data", "w+")
+    roi_file = open(image_filename + "_hog.data", "w")
     for cur_offset_x in range(0, region_size[0], offset_step_x):
         for cur_offset_y in range(0, region_size[1], offset_step_y):
             region_coords = (cur_offset_x, cur_offset_y, cur_offset_x+region_size[0], cur_offset_y+region_size[1])
@@ -31,17 +31,28 @@ def select_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                                cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys')
 
                 # save hog info, alongside other relevant info (pixel coords, base image file name)
-                roi_info = (hog_info.dumps(), region_coords, image_filename)
+                roi_info = (hog_info.dumps(), region_coords)
                 pickle.dump(roi_info, roi_file)
 
                 # increment to next region, no overlap of regions within this loop
                 region_coords += region_size
 
     roi_file.close()
-    raise NotImplementedError
+    print("Done Creating ROI HOGs")
 
 
 if __name__ == '__main__':
+    filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
+    im = cv2.imread(filename)
+    # make a fake mask for now.
+    mask = np.ones(im.shape[0]-20, im.shape[1]-20)     # 10 pixel border on either end = 20 pixels removed from both dims
+    # zero out upper right triangle to create edge to check if algorithm throws away regions correctly
+    mask = np.triu(mask)
+    # remove same pixel border from image
+    im = im[10: im.shape[0]-20, 10:im.shape[1]-20]
+    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', 200, 50, 50)
+
+    """
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
     im = cv2.imread(filename)
 
@@ -69,4 +80,5 @@ if __name__ == '__main__':
     ax[1].set_title('Histogram of Oriented Gradients')
     ax[1].set_adjustable('box-forced')
     fig.show()
+    """
 

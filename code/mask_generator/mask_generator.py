@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 # For the connected components, must be greyscale
-filename = "../image_subtractor/all_combined.png"
+filename = "../image_subtractor/all_combined2.png"
 #filename = "source_image.JPG"
 averaged_image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
 averaged_image_bgr = cv2.imread(filename)

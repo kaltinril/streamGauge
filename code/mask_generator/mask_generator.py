@@ -3,10 +3,22 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 # For the connected components, must be greyscale
-averaged_image = cv2.imread("../image_subtractor/all_combined.png", cv2.IMREAD_GRAYSCALE)
-averaged_image_bgr = cv2.imread("../image_subtractor/all_combined.png")
+filename = "../image_subtractor/all_combined.png"
+#filename = "source_image.JPG"
+averaged_image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
+averaged_image_bgr = cv2.imread(filename)
 
 print("Starting shape", averaged_image.shape)
+
+
+# load image and determine threadhold that will sepeate data
+# create bands of averaged rows
+# generate mask from the banded sections
+# HOG code: take top most block and top most block and generate histograms
+# grab the same section from all images for the ROI for HOG generation
+# Run them through an ANN with 0 for top band and 1 for bottom band
+
+
 
 # Remove the boarder "artifact" created by the previous process
 # Which is because we can't average the pixels off the side of the image to make the last 10 pixels.
@@ -97,7 +109,7 @@ def try_cc_alone():
     # Threshold it so it becomes binary
     ret, thresh = cv2.threshold(averaged_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # You need to choose 4 or 8 for connectivity type
-    connectivity =4
+    connectivity =8
     # Perform the operation
     output = cv2.connectedComponentsWithStats(thresh, connectivity, cv2.CV_32S)
     # Get the results
@@ -147,6 +159,7 @@ def try_k_means(img_color, K = 4):
     cv2.imshow('res2', res2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    return res2
 
 def try_equalized_Histogram(in_image):
     out_image = cv2.equalizeHist(in_image)
@@ -204,23 +217,34 @@ def try_blob_detection(im):
     cv2.waitKey(0)
 
 #try_k_means(averaged_image_bgr, 8)
-try_k_means(averaged_image_bgr, 4) # This looks like the best of the k_means options
+k_image = try_k_means(averaged_image_bgr, 4) # This looks like the best of the k_means options
 #try_k_means(averaged_image_bgr, 2)
-try_cc_alone() # Almost?
+#try_cc_alone() # Almost?
 #show_hist_gray(averaged_image)
 
 # Doesn't appear to find any blobs
-try_blob_detection(averaged_image_bgr)
+#try_blob_detection(averaged_image_bgr)
 
 # Works sort of, but too many regions
-try_equalized_Histogram(averaged_image)
+#try_equalized_Histogram(averaged_image)
 
-new_image4 = try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
-new_image3 = try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
-new_image2 = try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
-new_image1 = try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
-new_image5 = try_manual_paint_image(new_image4, averaged_image, 2)
+#new_image4 = try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
+#new_image3 = try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
+#new_image2 = try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
+#new_image1 = try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
+#new_image5 = try_manual_paint_image(new_image4, averaged_image, 2)
 
+def dialation(img):
+    kernel = np.ones((5, 5), np.uint8)
+    d = cv2.dilate(img, kernel, iterations=10)
+
+    cv2.imshow('image', d)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return d
+
+d_image = dialation(k_image)
 
 # Maybe we can use dialation to exaggerate the regions?
 # https://docs.opencv.org/master/d9/d61/tutorial_py_morphological_ops.html

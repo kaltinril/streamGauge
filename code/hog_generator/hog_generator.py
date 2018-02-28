@@ -11,26 +11,28 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                        region_threshold=0.8, orientations=8, pixels_per_cell=(4,4), cells_per_block=(8,8)):
     print("Creating ROI HOGs")
 
-    roi_file = open(image_filename + "_hog.data", "w")
+    roi_file = open(image_filename + "_hog.data", "wb")
     # shifts grid by offset to get slightly different pictures
     for cur_offset_x in range(0, region_size[0], offset_step_x):
         for cur_offset_y in range(0, region_size[1], offset_step_y):
             # looks at each tile of the grid with the current offset
-            for cur_region_y in range(0, total_iamge.shape[1]/region_size[1]):
-                for cur_region_x in range(0, total_iamge.shape[0]/region_size[0]):
+            for cur_region_y in range(0, total_iamge.shape[1]//region_size[1]):
+                for cur_region_x in range(0, total_iamge.shape[0]//region_size[0]):
                     region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
                     """
                     if region_coords[2] < total_iamge.shape[0] and region_coords[3] < total_iamge.shape[1]:
                         continue
                     """
-                    masked_region = stability_mask[region_coords[0]:region_coords[2], region_coords[1]:region_coords[3]]
-                    image_region = total_iamge[region_coords[0]:region_coords[2], region_coords[1]:region_coords[3]]
+                    masked_region = stability_mask[region_coords[0]:region_coords[0]+region_size[0],
+                                                   region_coords[1]:region_coords[1]+region_size[1]]
+                    image_region = total_iamge[region_coords[0]:region_coords[0]+region_size[0],
+                                               region_coords[1]:region_coords[1]+region_size[1]]
 
                     # this can be changed to return counts of each unique entry, so we can calculate percents
                     unique, unique_counts = np.unique(masked_region, return_counts=True)
                     sum_unique = region_size[0]*region_size[1]
-                    unique_counts /= sum_unique     # The percent of the region occupied by each type of mask
-                    if np.where(unique_counts >= region_threshold).size == 0:
+                    unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
+                    if unique_percents.max() < region_threshold:
                         break   # we can break this loop, as due to banding, all regions in this row have same issue
                     """
                     if unique.shape[0] > 1 or unique.shape[1] > 1:  # if there is >1 type of mask category in region
@@ -53,13 +55,14 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
 if __name__ == '__main__':
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
     im = cv2.imread(filename)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     # make a fake mask for now.
-    mask = np.ones(im.shape[0]-20, im.shape[1]-20)     # 10 pixel border on either end = 20 pixels removed from both dims
+    mask = np.ones((im.shape[0]-20, im.shape[1]-20))     # 10 pixel border on either end = 20 pixels removed from both dims
     # zero out upper right triangle to create edge to check if algorithm throws away regions correctly
-    mask = np.triu(mask)
+    mask[0:mask.shape[0]//2, 0:-1] = 0
     # remove same pixel border from image
     im = im[10: im.shape[0]-20, 10:im.shape[1]-20]
-    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', 200, 50, 50)
+    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (200, 200), 50, 50)
 
     """
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"

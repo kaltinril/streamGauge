@@ -308,7 +308,8 @@ def overlay_image(overlay, alpha, background):
 
     return output
 
-k_image = try_k_means(averaged_image_bgr, 4) # This looks like the best of the k_means options
+# This looks like the best of the k_means options for our source image
+k_image = try_k_means(averaged_image_bgr, 3)
 banded_image = create_banding_color(k_image)
 
 k_image_small = cv2.resize(k_image,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
@@ -337,6 +338,7 @@ cv2.waitKey(0)
 vertical = np.vstack((sbs,sbs2)) #stacking images side-by-side
 cv2.imshow('Vertical (All 4)', vertical)
 cv2.waitKey(0)
+
 
 # Cleanup
 cv2.destroyAllWindows()

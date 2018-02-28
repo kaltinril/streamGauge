@@ -46,8 +46,6 @@ def show_hist_gray(image):
 
 
 
-# res = np.hstack((averaged_image_bgr,equ)) #stacking images side-by-side
-
 def try_manual_paint_image(image, psudo_mask, split):
     img = np.asarray(list(image))
     mask = np.asarray(list(psudo_mask))
@@ -216,27 +214,11 @@ def try_blob_detection(im):
     cv2.imshow("Keypoints", im_with_keypoints)
     cv2.waitKey(0)
 
-#try_k_means(averaged_image_bgr, 8)
-k_image = try_k_means(averaged_image_bgr, 4) # This looks like the best of the k_means options
-#try_k_means(averaged_image_bgr, 2)
-#try_cc_alone() # Almost?
-#show_hist_gray(averaged_image)
-
-# Doesn't appear to find any blobs
-#try_blob_detection(averaged_image_bgr)
-
-# Works sort of, but too many regions
-#try_equalized_Histogram(averaged_image)
-
-#new_image4 = try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
-#new_image3 = try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
-#new_image2 = try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
-#new_image1 = try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
-#new_image5 = try_manual_paint_image(new_image4, averaged_image, 2)
-
 def dialation(img):
+    # Maybe we can use dialation to exaggerate the regions?
+    # https://docs.opencv.org/master/d9/d61/tutorial_py_morphological_ops.html
     kernel = np.ones((5, 5), np.uint8)
-    d = cv2.dilate(img, kernel, iterations=10)
+    d = cv2.dilate(img, kernel, iterations=5)
 
     cv2.imshow('image', d)
     cv2.waitKey(0)
@@ -244,10 +226,117 @@ def dialation(img):
 
     return d
 
-d_image = dialation(k_image)
+def try_them_all():
+    try_k_means(averaged_image_bgr, 8)
+    k_image = try_k_means(averaged_image_bgr, 4)  # This looks like the best of the k_means options
+    try_k_means(averaged_image_bgr, 2)
+    try_cc_alone() # Almost?
+    show_hist_gray(averaged_image)
 
-# Maybe we can use dialation to exaggerate the regions?
-# https://docs.opencv.org/master/d9/d61/tutorial_py_morphological_ops.html
+    # Doesn't appear to find any blobs
+    try_blob_detection(averaged_image_bgr)
+
+    # Works sort of, but too many regions
+    try_equalized_Histogram(averaged_image)
+
+    new_image4 = try_manual_paint_image(averaged_image_bgr, averaged_image, 4)
+    new_image3 = try_manual_paint_image(averaged_image_bgr, averaged_image, 3)
+    new_image2 = try_manual_paint_image(averaged_image_bgr, averaged_image, 2)
+    new_image1 = try_manual_paint_image(averaged_image_bgr, averaged_image, 1)
+    new_image5 = try_manual_paint_image(new_image4, averaged_image, 2)
+
+    d_image = dialation(k_image)
+
+
+def create_banding_gray(image):
+    img = np.asarray(list(image))
+
+    if len(image.shape) > 2:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # sample an Widght by N area
+    for i in range(0, img.shape[0], 20):
+        roi = img[i:i+20, :]
+        #largest_occurrence = max(roi, key=roi.)
+        #largest_occurrence = np.bincount(roi)
+        unique, counts = np.unique(roi, return_counts=True)
+        array_position = counts.argmax()
+        largest_occurrence = unique[array_position]
+        print(np.asarray((unique, counts)).T)
+        img[i:i+20, :] = largest_occurrence
+
+
+    cv2.imshow('Banded Grayscale image', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return img
+
+
+def create_banding_color(image):
+    img = np.asarray(list(image))
+
+    # sample an Widght by N area
+    for i in range(0, img.shape[0], 20):
+        roi = img[i:i+20, :]
+
+        color = []
+        for c in range(3):
+            hist = cv2.calcHist([roi], [c], None, [256], [0, 256])
+            #unique, counts = np.unique(hist, return_counts=True)
+            array_position = hist.argmax()
+            # largest_occurrence = unique[array_position]
+            color.append(array_position)
+
+        combined_color = (color[0], color[1], color[2])
+
+        img[i:i+20, :] = combined_color
+
+
+    cv2.imshow('Banded Color image', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return img
+
+def overlay_image(overlay, alpha, background):
+    output = np.asarray(list(background))
+    cv2.addWeighted(overlay, alpha, output, 1 - alpha, 0, output)
+
+    cv2.imshow('Overlayed', output)
+    cv2.waitKey(0)
+
+    return output
+
+k_image = try_k_means(averaged_image_bgr, 4) # This looks like the best of the k_means options
+banded_image = create_banding_color(k_image)
+
+k_image_small = cv2.resize(k_image,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+banded_image_small = cv2.resize(banded_image,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+
+sbs = np.hstack((k_image_small,banded_image_small)) #stacking images side-by-side
+cv2.imshow('Side-by-side', sbs)
+cv2.waitKey(0)
+
+# Create an overlay and a greyscale version
+overlayed = overlay_image(banded_image, 0.7, k_image)
+banded_gray = create_banding_gray(k_image)
+
+# Convert banded_gray to 3 channels so we can slap them together
+banded_gray_3channel = np.stack((banded_gray,)*3, -1)
+
+#Shrink those down
+overlayed_small = cv2.resize(overlayed,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+banded_gray_small = cv2.resize(banded_gray_3channel,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+
+# Display them
+sbs2 = np.hstack((overlayed_small,banded_gray_small)) #stacking images side-by-side
+cv2.imshow('Side-by-side 2', sbs2)
+cv2.waitKey(0)
+
+vertical = np.vstack((sbs,sbs2)) #stacking images side-by-side
+cv2.imshow('Vertical (All 4)', vertical)
+cv2.waitKey(0)
 
 # Cleanup
 cv2.destroyAllWindows()

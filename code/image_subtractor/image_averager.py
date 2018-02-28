@@ -5,14 +5,16 @@ import os
 avg_width = 20
 avg_height = 20
 
+DEBUG = False
+
 directory = "C:\\Users\\thisisme1\\Downloads\\Spartan - Cell-20180124T191933Z-001\\Spartan - Cleaned\\"
 output_directorty = "C:\\Users\\thisisme1\\Downloads\\Spartan - Cell-20180124T191933Z-001\\Spartan - Averaged\\"
 
 
 def extract_average_from_region(image, x, y, height, width):
     # Get the 20x20 area (for image 1)
-    region = image[y:y+height, x:x+width]  # img1[y1:y2, x1:x2]
-    
+    region = image[y:y + height, x:x + width]  # img1[y1:y2, x1:x2]
+
     # Get the average color for all pixels in the region1
     avg_color_per_row = np.average(region, axis=0)
     avg_color = np.average(avg_color_per_row, axis=0)
@@ -50,10 +52,11 @@ def average_all_images(image_directory):
             print("ERROR: Invalid file, skipping:", combined_filename)
             continue
 
-        print("Averaging image:", combined_filename)
-        image = average_image(image, avg_width, avg_height)
-        
-        print("Saving image:", output_filename)
+        print("Averaging image:", combined_filename) if DEBUG else None
+        image = cv2.blur(src=image, ksize=(20, 20))
+        # image = average_image(image, avg_width, avg_height)
+
+        print("Saving image:", output_filename) if DEBUG else None
         cv2.imwrite(output_filename, image)
 
 

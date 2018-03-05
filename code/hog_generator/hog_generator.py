@@ -8,21 +8,44 @@ import pickle
 
 # need to clip total_image to be same size as stability mask before using this function
 def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1,
-                       region_threshold=0.8, orientations=8, pixels_per_cell=(4,4), cells_per_block=(8,8)):
+                       region_threshold=0.9, orientations=8, pixels_per_cell=(4, 4), cells_per_block=(4, 4),
+                       banded=True):
+    """
+    This function takes an image, splits it into many regions of interest (ROIs), and then produces the histogram of
+    oriented gradients (HOGs) for each ROI. If a ROI lies between categories when looking at the stability mask, it will
+    be ignored and not saved. The method of culling data helps to only select data that clearly defines a type of object
+    so the ANN can more accurately train as there is a greater difference in data between the categories of objects.
+
+    :param total_iamge: A 2D array of pixels representing a GREYSCALE image (color is not accepted).
+    :param stability_mask: A 2D array of values, each unique value is a category of object, so the value 0 may be land,
+    while 1 may be water. This array must be the same shape as the total image.
+    :param image_filename: A string representing the name of the image. This should match the name of the file the
+    total_image was garnered from for the sake of being able to track the source of data for debugging, but it is not
+    required. This parameter is used to generate the name of the files that contain the HOG data for the image.
+    :param region_size: A 2 item tuple representing the width and height (in pixels) of the ROIs to be generated.
+    :param offset_step_x: An integer value representing the number of pixels to shift the grid, used to split the image
+    into ROI, by horizontally.
+    :param offset_step_y: An integer value representing the number of pixels to shift the grid, used to split the image
+    into ROI, by vertically.
+    :param region_threshold: A float between 0 and 1 representing the percent of a ROI that must be lies within a single
+    category defined in the mask.
+    :param orientations: An integer representing the number of bins the hog uses per cell, splitting up the orientations
+    0-180 degrees into this number of bins.
+    :param pixels_per_cell: A 2 item tuple representing the number of pixel wide and tall a cell is in the HOG algorithm
+    :param cells_per_block: A 2 item tuple representing the cells wide and tall a bock is in the HOG algorithm
+    :param banded: A boolean value representing if the stability mask has been banded, where each row in the 2D array
+    has been averaged to as single category, so the algorithm used to split the image into ROI can take some shortcuts
+    :return: Nothing, but saves the results of the HOG algorithm for each ROI to individual files in a folder
+    """
     print("Creating ROI HOGs")
 
-    roi_file = open(image_filename + "_hog.data", "wb")
     # shifts grid by offset to get slightly different pictures
     for cur_offset_x in range(0, region_size[0], offset_step_x):
         for cur_offset_y in range(0, region_size[1], offset_step_y):
-            # looks at each tile of the grid with the current offset
+            # looks at each tile of the grid with the current offset to produce ROIs
             for cur_region_y in range(0, total_iamge.shape[1]//region_size[1]):
                 for cur_region_x in range(0, total_iamge.shape[0]//region_size[0]):
                     region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
-                    """
-                    if region_coords[2] < total_iamge.shape[0] and region_coords[3] < total_iamge.shape[1]:
-                        continue
-                    """
                     masked_region = stability_mask[region_coords[0]:region_coords[0]+region_size[0],
                                                    region_coords[1]:region_coords[1]+region_size[1]]
                     image_region = total_iamge[region_coords[0]:region_coords[0]+region_size[0],
@@ -32,23 +55,18 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                     unique, unique_counts = np.unique(masked_region, return_counts=True)
                     sum_unique = region_size[0]*region_size[1]
                     unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
-                    if unique_percents.max() < region_threshold:
-                        break   # we can break this loop, as due to banding, all regions in this row have same issue
-                    """
-                    if unique.shape[0] > 1 or unique.shape[1] > 1:  # if there is >1 type of mask category in region
-                        region_coords += region_size
-                        continue
-                    """
+                    if unique_percents.max() < region_threshold and banded:
+                        break   # we can break this loop, as due to banding all regions in this row will hit this line
 
                     # create hog for region
                     hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
                                    cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys')
-
+                    # format the string for the filename
+                    new_filename = ("./HOG Files/%s_hogInfo_X%d_Y%d_OX%d_OY%d.npz" % (image_filename, cur_region_x, cur_region_y,
+                                                                          cur_offset_x, cur_offset_y))
                     # save hog info, alongside other relevant info (pixel coords, base image file name)
-                    roi_info = (hog_info.dumps(), region_coords)
-                    pickle.dump(roi_info, roi_file)
+                    np.savez_compressed(new_filename, hog_info)
 
-    roi_file.close()
     print("Done Creating ROI HOGs")
 
 

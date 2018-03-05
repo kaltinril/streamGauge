@@ -4,7 +4,7 @@ from skimage.feature import hog
 from skimage import data, color, exposure
 import numpy as np
 import pickle
-import glob, os
+import glob, os, errno
 
 
 # need to clip total_image to be same size as stability mask before using this function
@@ -50,6 +50,12 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
            and pixels_per_cell[1]*cells_per_block[1] <= total_iamge.shape[1], "Image too small for number of cells and blocks"
     assert offset_step_x < region_size[0] and offset_step_y < region_size[1], "Offset Step too large"
 
+    try:
+        os.makedirs("./HOG Files")
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            print("Could not create or find HOG Files directory")
+            raise
 
     # shifts grid by offset to get slightly different pictures
     for cur_offset_x in range(0, region_size[0], offset_step_x):

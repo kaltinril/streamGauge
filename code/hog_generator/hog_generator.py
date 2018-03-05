@@ -39,6 +39,17 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     """
     print("Creating ROI HOGs")
 
+    assert stability_mask.shape == total_iamge.shape, "Mask and Image different sizes, must be same size"
+    assert region_size[0] <= total_iamge.shape[0] and region_size[1] <= total_iamge.shape[1], \
+        "Region Size large than Image Dimensions"
+    assert 0 < region_threshold <= 1.0, "Region Threshold outside of range [0,1)"
+    assert pixels_per_cell[0] > 0 and pixels_per_cell[1] > 0, "Pixels per Cell items must be positive"
+    assert cells_per_block[0] > 0 and cells_per_block[1] > 0, "Cells per Block must be positive"
+    assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge[0] \
+           and pixels_per_cell[1]*cells_per_block[1] <= total_iamge[1], "Image too small for number of cells and blocks"
+    assert offset_step_x < region_size[0] and offset_step_y < region_size[1], "Offset Step too large"
+
+
     # shifts grid by offset to get slightly different pictures
     for cur_offset_x in range(0, region_size[0], offset_step_x):
         for cur_offset_y in range(0, region_size[1], offset_step_y):

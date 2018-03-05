@@ -4,6 +4,7 @@ from skimage.feature import hog
 from skimage import data, color, exposure
 import numpy as np
 import pickle
+import glob, os
 
 
 # need to clip total_image to be same size as stability mask before using this function
@@ -45,8 +46,8 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     assert 0 < region_threshold <= 1.0, "Region Threshold outside of range [0,1)"
     assert pixels_per_cell[0] > 0 and pixels_per_cell[1] > 0, "Pixels per Cell items must be positive"
     assert cells_per_block[0] > 0 and cells_per_block[1] > 0, "Cells per Block must be positive"
-    assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge[0] \
-           and pixels_per_cell[1]*cells_per_block[1] <= total_iamge[1], "Image too small for number of cells and blocks"
+    assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge.shape[0] \
+           and pixels_per_cell[1]*cells_per_block[1] <= total_iamge.shape[1], "Image too small for number of cells and blocks"
     assert offset_step_x < region_size[0] and offset_step_y < region_size[1], "Offset Step too large"
 
 
@@ -81,6 +82,18 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     print("Done Creating ROI HOGs")
 
 
+def load_hogs(folder_dir):
+    hog_list = []
+    os.chdir(folder_dir)    # TODO: handle folder not found issues
+    for file in glob.glob("*.npz"):
+        hog_list.append(load_hog(file))
+    return hog_list
+
+
+def load_hog(file):
+    return np.load(file)['arr_0']   # TODO: handle file not found issues
+
+
 if __name__ == '__main__':
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
     im = cv2.imread(filename)
@@ -90,7 +103,7 @@ if __name__ == '__main__':
     # zero out upper right triangle to create edge to check if algorithm throws away regions correctly
     mask[0:mask.shape[0]//2, 0:-1] = 0
     # remove same pixel border from image
-    im = im[10: im.shape[0]-20, 10:im.shape[1]-20]
+    im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
     create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (200, 200), 50, 50)
 
     """

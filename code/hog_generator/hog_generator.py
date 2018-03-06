@@ -80,8 +80,8 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                     hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
                                    cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys')
                     # format the string for the filename
-                    new_filename = ("./HOG Files/%s_hogInfo_X%d_Y%d_OX%d_OY%d.npz" % (image_filename, cur_region_x, cur_region_y,
-                                                                          cur_offset_x, cur_offset_y))
+                    new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
+                                                                          cur_offset_x, cur_offset_y, image_filename))
                     # save hog info, alongside other relevant info (pixel coords, base image file name)
                     np.savez_compressed(new_filename, hog_info)
 
@@ -89,15 +89,40 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
 
 
 def load_hogs(folder_dir):
-    hog_list = []
+    """
+    Retrieves the data from all .npz files (compressed or otherwise) and puts them into a dictionary by filename
+
+    :param folder_dir: A string that represents the path of the folder containing the .npz files
+    :return: A dictionary whose keys are the filename of a file, and the values are the ndarrays contained in the files
+    """
+    hog_list = {}
     os.chdir(folder_dir)    # TODO: handle folder not found issues
     for file in glob.glob("*.npz"):
-        hog_list.append(load_hog(file))
+        hog_list[file] = load_hog(file)
     return hog_list
 
 
 def load_hog(file):
+    """
+    Retrieves the data from a single .npz file
+
+    :param file: A string representing the name of a .npz file, or the file object itself.
+    :return: The ndarray contained in the file, decompressed, extracted, and ready to use.
+    """
     return np.load(file)['arr_0']   # TODO: handle file not found issues
+
+
+def parse_filename(filename):
+    """
+    Garners metadata for a HOG file that indicates what portion of the ROI is from, and which image file it was taken
+    from
+
+    :param filename: The string to be parsed, the name of a HOG file
+    :return: a dictionary with the keys region_x, region_y, offset_x, and offset_y, the data of which is an integer.
+    """
+    splitstr = filename.split("_")
+    assert len(splitstr) >= 4, "Filename is not in proper format"
+    return {"region_x": splitstr[0], "region_y": splitstr[1], "offset_x": splitstr[2], "offset_y": splitstr[3]}
 
 
 if __name__ == '__main__':

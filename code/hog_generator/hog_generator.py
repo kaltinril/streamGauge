@@ -97,13 +97,16 @@ def load_hogs(folder_dir):
     Retrieves the data from all .npz files (compressed or otherwise) and puts them into a dictionary by filename
 
     :param folder_dir: A string that represents the path of the folder containing the .npz files
-    :return: A dictionary whose keys are the filename of a file, and the values are the ndarrays contained in the files
+    :return: An ndarray containing the all the instances of the hog data, and a list containing the file names, in the
+    same order
     """
-    hog_list = {}
+    hog_list = []
+    file_list = []
     os.chdir(folder_dir)    # TODO: handle folder not found issues
     for file in glob.glob("*.npz"):
-        hog_list[file] = load_hog(file)
-    return hog_list
+        hog_list.append(load_hog(file))
+        file_list.append(file)
+    return np.array(hog_list), file_list
 
 
 def load_hog(file):
@@ -128,6 +131,7 @@ def parse_filename(filename):
     splitstr = filename.split("_")
     assert len(splitstr) >= 4, "Filename is not in proper format"
     return {"region": (splitstr[0], splitstr[1]), "offset": (splitstr[2], splitstr[3])}
+
 
 def PCA(data_in, dim_out, standardize=True):
     """

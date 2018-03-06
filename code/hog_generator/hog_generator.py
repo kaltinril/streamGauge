@@ -40,6 +40,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     """
     print("Creating ROI HOGs")
 
+    # Asserts for debugging and enforcing data rules for parameters
     assert stability_mask.shape == total_iamge.shape, "Mask and Image different sizes, must be same size"
     assert region_size[0] <= total_iamge.shape[0] and region_size[1] <= total_iamge.shape[1], \
         "Region Size large than Image Dimensions"
@@ -50,6 +51,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
            and pixels_per_cell[1]*cells_per_block[1] <= total_iamge.shape[1], "Image too small for number of cells and blocks"
     assert offset_step_x < region_size[0] and offset_step_y < region_size[1], "Offset Step too large"
 
+    # Create the folder to put the HOG files if none exists. Try except handles race condition, unlike straight makedirs
     try:
         os.makedirs("./HOG Files")
     except OSError as e:
@@ -131,12 +133,13 @@ if __name__ == '__main__':
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     # make a fake mask for now.
     mask = np.ones((im.shape[0]-20, im.shape[1]-20))     # 10 pixel border on either end = 20 pixels removed from both dims
-    # zero out upper right triangle to create edge to check if algorithm throws away regions correctly
+    # zero out upper half to test the ROI culling portion of the HOG generation algorithm
     mask[0:mask.shape[0]//2, 0:-1] = 0
     # remove same pixel border from image
     im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
     create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (200, 200), 50, 50)
 
+    # old code for creating and displaying the HOG image and greyscale input
     """
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
     im = cv2.imread(filename)

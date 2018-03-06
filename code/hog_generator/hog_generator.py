@@ -6,6 +6,9 @@ import numpy as np
 import glob
 import os
 import errno
+from sklearn import decomposition
+from sklearn import datasets
+from sklearn.preprocessing import StandardScaler
 
 
 # need to clip total_image to be same size as stability mask before using this function
@@ -125,6 +128,23 @@ def parse_filename(filename):
     splitstr = filename.split("_")
     assert len(splitstr) >= 4, "Filename is not in proper format"
     return {"region": (splitstr[0], splitstr[1]), "offset": (splitstr[2], splitstr[3])}
+
+def PCA(data_in, dim_out, standardize=True):
+    """
+    Uses sklearn's PCA function and StandardScaler function to transform a dataset to another subspace.
+
+    :param data_in: An ndarray or matrix representing a collection of feature vectors to be transformed
+    :param dim_out: An integer representing the number of dimensions in the subspace the feature vectors will be
+    transformed into.
+    :param standardize: A boolean value representing whether or not to standardize the data before running PCA.
+    :return: Returns an ndarray having the same number of rows as data_in, but dim_out number of columns
+    """
+    data_out = data_in
+    pca = decomposition.PCA(n_components=dim_out)
+    if standardize:
+        data_out = StandardScaler().fit_transform(data_in)
+    data_out = pca.fit_transform(data_out)
+    return data_out
 
 
 if __name__ == '__main__':

@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 from skimage.feature import hog
 from skimage import data, color, exposure
 import numpy as np
-import pickle
-import glob, os, errno
+import glob
+import os
+import errno
 
 
 # need to clip total_image to be same size as stability mask before using this function
-def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step_x=1, offset_step_y=1,
+def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step=(1,1),
                        region_threshold=0.9, orientations=8, pixels_per_cell=(4, 4), cells_per_block=(4, 4),
                        banded=True):
     """
@@ -24,10 +25,8 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     total_image was garnered from for the sake of being able to track the source of data for debugging, but it is not
     required. This parameter is used to generate the name of the files that contain the HOG data for the image.
     :param region_size: A 2 item tuple representing the width and height (in pixels) of the ROIs to be generated.
-    :param offset_step_x: An integer value representing the number of pixels to shift the grid, used to split the image
-    into ROI, by horizontally.
-    :param offset_step_y: An integer value representing the number of pixels to shift the grid, used to split the image
-    into ROI, by vertically.
+    :param offset_step: A 2 item tuple representing the number of pixels to shift the grid in the horizontal and
+    vertical, used to split the image into ROI.
     :param region_threshold: A float between 0 and 1 representing the percent of a ROI that must be lies within a single
     category defined in the mask.
     :param orientations: An integer representing the number of bins the hog uses per cell, splitting up the orientations
@@ -49,7 +48,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     assert cells_per_block[0] > 0 and cells_per_block[1] > 0, "Cells per Block must be positive"
     assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge.shape[0] \
            and pixels_per_cell[1]*cells_per_block[1] <= total_iamge.shape[1], "Image too small for number of cells and blocks"
-    assert offset_step_x < region_size[0] and offset_step_y < region_size[1], "Offset Step too large"
+    assert offset_step[0] < region_size[0] and offset_step[1] < region_size[1], "Offset Step too large"
 
     # Create the folder to put the HOG files if none exists. Try except handles race condition, unlike straight makedirs
     try:
@@ -60,8 +59,8 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
             raise
 
     # shifts grid by offset to get slightly different pictures
-    for cur_offset_x in range(0, region_size[0], offset_step_x):
-        for cur_offset_y in range(0, region_size[1], offset_step_y):
+    for cur_offset_x in range(0, region_size[0], offset_step[0]):
+        for cur_offset_y in range(0, region_size[1], offset_step[1]):
             # looks at each tile of the grid with the current offset to produce ROIs
             for cur_region_y in range(0, total_iamge.shape[1]//region_size[1]):
                 for cur_region_x in range(0, total_iamge.shape[0]//region_size[0]):
@@ -120,11 +119,12 @@ def parse_filename(filename):
     from
 
     :param filename: The string to be parsed, the name of a HOG file
-    :return: a dictionary with the keys region_x, region_y, offset_x, and offset_y, the data of which is an integer.
+    :return: a dictionary with the keys region and offset, the data of which are 2 item tuples representing the x and y
+    dimensions of the region and offset.
     """
     splitstr = filename.split("_")
     assert len(splitstr) >= 4, "Filename is not in proper format"
-    return {"region_x": splitstr[0], "region_y": splitstr[1], "offset_x": splitstr[2], "offset_y": splitstr[3]}
+    return {"region": (splitstr[0], splitstr[1]), "offset": (splitstr[2], splitstr[3])}
 
 
 if __name__ == '__main__':
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     mask[0:mask.shape[0]//2, 0:-1] = 0
     # remove same pixel border from image
     im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
-    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (200, 200), 50, 50)
+    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (200, 200), (50, 50))
 
     # old code for creating and displaying the HOG image and greyscale input
     """

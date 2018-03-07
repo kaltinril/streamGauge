@@ -33,6 +33,16 @@ def valid_images(image1, image2, image2_name):
     return True
 
 
+def load_and_blur_image(input_image, pairs, average_width, average_height):
+    image = cv2.imread(input_image)
+    if image is None:
+        print("ERROR: Invalid file, skipping:", input_image)
+        return None
+
+    print(pairs, "Working on new image:", input_image) if DEBUG else None
+
+    return cv2.blur(src=image, ksize=(average_width, average_height))
+
 # Method:   average_then_subtract_images
 # Purpose:  Find the temporal differences between a set of images in a directory
 # Input:
@@ -48,6 +58,8 @@ def valid_images(image1, image2, image2_name):
 #           3. Subtract each pair of images color values to produce the absolute value difference.
 #           4. Add all these pair values together and divide by the total number of pairs (Average)
 #           5. Return an image of the final result
+# Link:
+#           https://docs.opencv.org/master/d4/d13/tutorial_py_filtering.html
 def average_then_subtract_images(image_directory, average_width, average_height):
     out_image = None
     image1 = None
@@ -58,43 +70,39 @@ def average_then_subtract_images(image_directory, average_width, average_height)
     for filename in os.listdir(image_directory):
         combined_filename = os.path.join(image_directory, filename)
 
+        # Load first image if we have not yet loaded it
         if image1 is None:
-            image1 = cv2.imread(combined_filename)
-            if image1 is None:
-                print("ERROR: Invalid file, skipping:", combined_filename)
-                continue
-
-            print(pairs, "Working on new image1", combined_filename) if DEBUG else None
-            image1 = cv2.blur(src=image1, ksize=(average_width, average_height))
+            image1 = load_and_blur_image(combined_filename, pairs, average_width, average_height)
             continue
 
+        # Load second image
         if image2 is None:
-            image2 = cv2.imread(combined_filename)
+            image2 = load_and_blur_image(combined_filename, pairs, average_width, average_height)
             if image2 is None:
-                print("ERROR: Invalid file, skipping:", combined_filename)
                 continue
 
-            print(pairs, "Working on new image2", combined_filename) if DEBUG else None
-            image2 = cv2.blur(src=image2, ksize=(average_width, average_height))
-
+        # Make sure the images are the same size
         if not valid_images(image1, image2, combined_filename):
             image2 = None
             continue
 
         # Create a blank image to write to
+        # We don't have the dimensions until we've entered the loop, so this will only be None once.
         if out_image is None:
             out_image = np.zeros((image1.shape[0], image1.shape[1], 3), np.uint64)
 
-        pairs += 1
+        pairs += 1  # Keep track of how many pairs so we can divide by this later
 
+        # (Subtract) the color values of the 2 images and add the result to the output_image color values
         avg_subtracted = cv2.absdiff(image1, image2)
         out_image = np.add(out_image, avg_subtracted)
 
         # Set image1 as the blurred (Averaged) image2 so we don't have to re-calculate it
-        # when we compare against "image3"
+        # Clear image2 so we load the next image on the next loop
         image1 = image2
         image2 = None
 
+    # (Average) the output_image and convert back to 0-255 image size
     out_image = out_image / pairs  # average the values
     out_image = out_image.astype(np.uint8)  # convert back to uint8
     return out_image

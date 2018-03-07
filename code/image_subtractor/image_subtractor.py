@@ -4,6 +4,12 @@ import os                   # Used to combine the image paths
 import sys                  # Used to get the sys.argv options
 import getopt               # Friendly command line options
 
+'''
+Image Subtractor
+    Find the temporal differences between a set of images in a directory
+    Created by:     Jeremy Swartwood
+'''
+
 # Global Values
 DEBUG = False
 
@@ -20,7 +26,7 @@ DEBUG = False
 # TODO: Maybe ignore images that are "TOO different"
 def valid_images(image1, image2, image2_name):
     if image1.shape != image2.shape:
-        print("Unable to use [" + image2_name + "].  Dimensions are not the same as first image.")
+        print("Mismatching Dimensions, skipping: [" + image2_name + "].")
         print("(Y, X, Channels) = Image1:", str(image1.shape), " Image2:", str(image2.shape))
         return False
 
@@ -152,10 +158,21 @@ def load_arguments(argv):
             elif opt in ("-d", "--debug"):
                 DEBUG = True  # Global variable for printing out debug information
 
+    print("Using parameters:")
+    print("Output File:     ", output_filename)
+    print("Intput Directory:", input_directory)
+    print("Blur Width:      ", average_width)
+    print("Blur Height:     ", average_height)
+    print("Debug:           ", DEBUG)
+    print("")
+
     return input_directory, output_filename, average_width, average_height
 
 
 def main(argv):
+    print("Image Temporal Blurring, Averaging, and Subtraction.")
+    print("")
+
     # Load all the arguments and return them
     input_directory, output_filename, average_width, average_height = load_arguments(argv)
 

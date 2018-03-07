@@ -188,6 +188,9 @@ def main(argv):
     # cleanup
     cv2.destroyAllWindows()
 
+    print("")
+    print("Successfully completed, look for file", output_filename)
+
 
 if __name__ == "__main__":
     main(sys.argv)

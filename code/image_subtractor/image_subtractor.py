@@ -1,6 +1,6 @@
 import cv2                  # Used to load, blur, and save the images
 import numpy as np          # Used for image and array manipulation
-import os                   # Used to combine the image paths
+import os                   # Used to combine the image paths, create the output directory of save_blur
 import sys                  # Used to get the sys.argv options
 import getopt               # Friendly command line options
 
@@ -13,12 +13,15 @@ Usage:
         import cv2
         import image_subtractor
         
-        out = image_subtractor.average_then_subtract_images("./images/", 21, 21)
-        cv2.imwrite("test.png", out)
+        all_combined = image_subtractor.average_then_subtract_images("./images/")
+        cv2.imwrite("all_combined.png", all_combined)
 '''
 
-# Global Values
+# Global Values and Defaults
 DEBUG = False
+AVERAGE_WIDTH_DEFAULT = 21
+AVERAGE_HEIGHT_DEFAULT = 21
+SAVE_BLUR_DEFAULT = False
 
 
 # Method:   valid_image
@@ -40,6 +43,23 @@ def valid_images(image1, image2, image2_name):
     return True
 
 
+def create_output_directory(image_directory):
+    output_directory = os.path.join(image_directory, "output")
+    if not os.path.exists(output_directory):
+        print("Making output directory to save the Blurred Images...")
+        print("  output_directory: " + output_directory)
+        os.makedirs(output_directory)
+
+    return output_directory
+
+
+def save_blurred_image(output_directory, filename, image):
+    output_filename = os.path.join(output_directory, filename)
+
+    print("Saving image:", output_filename) if DEBUG else None
+    cv2.imwrite(output_filename, image)
+
+
 def load_and_blur_image(input_image, pairs, average_width, average_height):
     image = cv2.imread(input_image)
     if image is None:
@@ -49,6 +69,7 @@ def load_and_blur_image(input_image, pairs, average_width, average_height):
     print(pairs, "Working on new image:", input_image) if DEBUG else None
 
     return cv2.blur(src=image, ksize=(average_width, average_height))
+
 
 # Method:   average_then_subtract_images
 # Purpose:  Find the temporal differences between a set of images in a directory
@@ -67,11 +88,19 @@ def load_and_blur_image(input_image, pairs, average_width, average_height):
 #           5. Return an image of the final result
 # Link:
 #           https://docs.opencv.org/master/d4/d13/tutorial_py_filtering.html
-def average_then_subtract_images(image_directory, average_width, average_height):
+def average_then_subtract_images(image_directory,
+                                 average_width=AVERAGE_WIDTH_DEFAULT,
+                                 average_height=AVERAGE_HEIGHT_DEFAULT,
+                                 save_blur=SAVE_BLUR_DEFAULT):
     out_image = None
     image1 = None
     image2 = None
+    output_directory = ""
     pairs = 0
+
+    # If the user wants to save the blurred images, make sure the output directory exists
+    if save_blur:
+        output_directory = create_output_directory(image_directory)
 
     # Load images from folders in loop
     for filename in os.listdir(image_directory):
@@ -80,6 +109,10 @@ def average_then_subtract_images(image_directory, average_width, average_height)
         # Load first image if we have not yet loaded it
         if image1 is None:
             image1 = load_and_blur_image(combined_filename, pairs, average_width, average_height)
+
+            # Save the blurred image1 (This should only happen once)
+            if save_blur and image1 is not None:
+                save_blurred_image(output_directory, filename, image1)
             continue
 
         # Load second image
@@ -92,6 +125,10 @@ def average_then_subtract_images(image_directory, average_width, average_height)
         if not valid_images(image1, image2, combined_filename):
             image2 = None
             continue
+
+        # Save the blurred image2
+        if save_blur:
+            save_blurred_image(output_directory, filename, image2)
 
         # Create a blank image to write to
         # We don't have the dimensions until we've entered the loop, so this will only be None once.
@@ -131,8 +168,13 @@ def print_help(script_name):
     print(" -e, --height")
     print("    Height of the region to blur")
     print("    default: 21")
+    print(" -s, --save")
+    print("    Save each blurred image to a sub-directory")
+    print("    WARNING: This will take longer.")
     print(" -d, --debug")
     print("    Turn debug mode on")
+    print("    WARNING: This will slow down the process")
+    print("")
     print("Example: " + script_name + ' -o outputfile.png -i "C:\\images\\"')
 
 
@@ -143,14 +185,15 @@ def load_arguments(argv):
     # Default values for parameters/arguments
     input_directory = "C:\\Users\\thisisme1\\Downloads\\Spartan - Cell-20180124T191933Z-001\\Spartan - Cleaned\\"
     output_filename = 'all_combined.png'
-    average_width = 21
-    average_height = 21
+    average_width = AVERAGE_WIDTH_DEFAULT
+    average_height = AVERAGE_HEIGHT_DEFAULT
+    save_blur = SAVE_BLUR_DEFAULT
 
     # No reason to parse the options if there are none, just use the defaults
     if len(argv) > 1:
         try:
-            single_character_options = "ho:i:w:e:d"  # : indicates a required value with the value
-            full_word_options = ["help", "outfile=", "indir=", "width=", "height=", "debug"]
+            single_character_options = "ho:i:w:e:ds"  # : indicates a required value with the value
+            full_word_options = ["help", "outfile=", "indir=", "width=", "height=", "debug", "save"]
 
             opts, remainder = getopt.getopt(argv[1:], single_character_options, full_word_options)
         except getopt.GetoptError:
@@ -172,16 +215,19 @@ def load_arguments(argv):
                 average_height = int(arg)
             elif opt in ("-d", "--debug"):
                 DEBUG = True  # Global variable for printing out debug information
+            elif opt in ("-s", "--save"):
+                save_blur = True
 
     print("Using parameters:")
     print("Output File:     ", output_filename)
     print("Intput Directory:", input_directory)
     print("Blur Width:      ", average_width)
     print("Blur Height:     ", average_height)
+    print("Save blur images?", save_blur)
     print("Debug:           ", DEBUG)
     print("")
 
-    return input_directory, output_filename, average_width, average_height
+    return input_directory, output_filename, average_width, average_height, save_blur
 
 
 def main(argv):
@@ -189,10 +235,10 @@ def main(argv):
     print("")
 
     # Load all the arguments and return them
-    input_directory, output_filename, average_width, average_height = load_arguments(argv)
+    input_directory, output_filename, average_width, average_height, save_blur = load_arguments(argv)
 
     # Get the result of the complete averaged series of files and save it
-    blank_image = average_then_subtract_images(input_directory, average_width, average_height)
+    blank_image = average_then_subtract_images(input_directory, average_width, average_height, save_blur)
     cv2.imwrite(output_filename, blank_image)
 
     # Display image if debug is on

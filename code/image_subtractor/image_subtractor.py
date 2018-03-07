@@ -8,6 +8,13 @@ import getopt               # Friendly command line options
 Image Subtractor
     Find the temporal differences between a set of images in a directory
     Created by:     Jeremy Swartwood
+Usage:
+    To use this in another python library:
+        import cv2
+        import image_subtractor
+        
+        out = image_subtractor.average_then_subtract_images("./images/", 21, 21)
+        cv2.imwrite("test.png", out)
 '''
 
 # Global Values

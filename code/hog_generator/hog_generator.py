@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 # need to clip total_image to be same size as stability mask before using this function
 def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, offset_step=(1,1),
-                       region_threshold=0.9, orientations=8, pixels_per_cell=(4, 4), cells_per_block=(4, 4),
+                       region_threshold=0.9, orientations=9, pixels_per_cell=(4, 4), cells_per_block=(2, 2),
                        banded=True):
     """
     This function takes an image, splits it into many regions of interest (ROIs), and then produces the histogram of
@@ -129,7 +129,7 @@ def parse_filename(filename):
     """
     splitstr = filename.split("_")
     assert len(splitstr) >= 4, "Filename is not in proper format"
-    return {"region": (splitstr[0], splitstr[1]), "offset": (splitstr[2], splitstr[3])}
+    return {"region": (int(splitstr[0]), int(splitstr[1])), "offset": (int(splitstr[2]), int(splitstr[3]))}
 
 
 def PCA(data_in, dim_out, standardize=True):
@@ -161,7 +161,7 @@ if __name__ == '__main__':
     mask[0:mask.shape[0]//2, 0:-1] = 0
     # remove same pixel border from image
     im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
-    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (200, 200), (50, 50))
+    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (50, 50), (25, 25))
 
     # old code for creating and displaying the HOG image and greyscale input
     """

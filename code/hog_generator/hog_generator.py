@@ -7,7 +7,6 @@ import glob
 import os
 import errno
 from sklearn import decomposition
-from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
 
 
@@ -94,7 +93,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
 
 def load_hogs(folder_dir):
     """
-    Retrieves the data from all .npz files (compressed or otherwise) and puts them into a dictionary by filename
+    Retrieves the data from all .npz files (compressed or otherwise) in a folder, and returns the data and filenames
 
     :param folder_dir: A string that represents the path of the folder containing the .npz files
     :return: An ndarray containing the all the instances of the hog data, and a list containing the file names, in the
@@ -152,6 +151,7 @@ def PCA(data_in, dim_out, standardize=True):
 
 
 if __name__ == '__main__':
+    # Simple Example Use Scenario
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
     im = cv2.imread(filename)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)

@@ -12,7 +12,7 @@ Usage:
         import cv2
         import mask_generator
         
-        mask = mask_generator.build_mask("./images/")
+        mask = mask_generator.build_mask("temporal_image.png")
         cv2.imwrite("mask.png", mask)
 '''
 
@@ -92,7 +92,9 @@ def overlay_image(overlay, alpha, background):
     return output
 
 
-def build_mask(source_filename, k_value, output_filename):
+def build_mask(source_filename=DEFAULT_SOURCE_FILENAME, 
+               k_value=DEFAULT_K_VALUE,
+               output_filename=DEFAULT_OUTPUT_FILENAME):
     # Load image in
     source_image_gray = cv2.imread(source_filename, cv2.IMREAD_GRAYSCALE)
     source_image = cv2.imread(source_filename)

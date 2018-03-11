@@ -3,6 +3,19 @@ import numpy as np          # Used for image and array manipulation
 import sys                  # Used to get the sys.argv options
 import getopt               # Friendly command line options
 
+'''
+Mark Generator
+    Take a temporal subtracted aggregate image in and produce a mask image from it
+    Created by:     Jeremy Swartwood
+Usage:
+    To use this in another python library:
+        import cv2
+        import mask_generator
+        
+        mask = mask_generator.build_mask("./images/")
+        cv2.imwrite("mask.png", mask)
+'''
+
 # Global Defaults
 DEBUG = False
 DEFAULT_SOURCE_FILENAME = "../image_subtractor/all_combined2.png"
@@ -79,7 +92,7 @@ def overlay_image(overlay, alpha, background):
     return output
 
 
-def build_mask(k_value, output_filename, source_filename):
+def build_mask(source_filename, k_value, output_filename):
     # Load image in
     source_image_gray = cv2.imread(source_filename, cv2.IMREAD_GRAYSCALE)
     source_image = cv2.imread(source_filename)
@@ -240,7 +253,7 @@ def main(argv):
     # Load all the arguments and return them
     source_filename, output_filename, k_value = load_arguments(argv)
 
-    final_mask = build_mask(k_value, output_filename, source_filename)
+    final_mask = build_mask(source_filename, k_value, output_filename)
 
     print("")
     print("Successfully completed, look for file", output_filename)

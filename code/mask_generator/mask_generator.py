@@ -79,6 +79,57 @@ def overlay_image(overlay, alpha, background):
     return output
 
 
+def build_mask(k_value, output_filename, source_filename):
+    # Load image in
+    source_image_gray = cv2.imread(source_filename, cv2.IMREAD_GRAYSCALE)
+    source_image = cv2.imread(source_filename)
+
+    # Display debug information if requested
+    if DEBUG:
+        print("Starting temporal image shape", source_image_gray.shape)
+        print("Max BGR Value:", np.max(source_image))
+        print("Max Gray scale Value:", np.max(source_image_gray))
+
+    # Remove bottom boarder
+    # TODO: Find dynamic way to do this
+    source_image_gray = source_image_gray[0:-35, :]
+    source_image = source_image[0:-35, :]
+
+    # Display debug information if requested
+    if DEBUG:
+        print("After Removing bottom shape", source_image_gray.shape)
+        print("Max BGR Value:", np.max(source_image))
+        print("Max Gray scale Value:", np.max(source_image_gray))
+
+    # Create the K_IMAGE and then turn it into a banded image, and finally bitwise "AND" the images together
+    k_image = try_k_means(source_image, k_value)
+    banded_image = create_banding_color(k_image)
+    final_mask = cv2.bitwise_and(banded_image, k_image)
+
+    # Do the same thing for greyscale
+    k_image_gray = cv2.cvtColor(k_image, cv2.COLOR_BGR2GRAY)
+    banded_gray = create_banding_gray(k_image_gray)
+    final_mask_gray = cv2.bitwise_and(banded_gray, k_image_gray)
+
+    # Add the bottom 35 rows of pixels back as a copy of the existing bottom 35 pixels
+    k_image = np.vstack((k_image, k_image[-35:, :]))
+    banded_image = np.vstack((banded_image, banded_image[-35:, :]))
+    final_mask = np.vstack((final_mask, final_mask[-35:, :]))
+    final_mask_gray = np.vstack((final_mask_gray, final_mask_gray[-35:, :]))
+
+    # Save the images
+    cv2.imwrite("kmean-" + output_filename, k_image)
+    cv2.imwrite("banding-" + output_filename, banded_image)
+    cv2.imwrite(output_filename, final_mask)
+    cv2.imwrite("gray-" + output_filename, final_mask_gray)
+
+    # Display image if debug is on and Save extra analysis images
+    if DEBUG:
+        extra_debug_image_analysis(banded_image, k_image, output_filename)
+
+    return final_mask
+
+
 def extra_debug_image_analysis(banded_image, k_image, output_filename):
     print("DEBUG: Creating side by side quad image")
 
@@ -189,54 +240,12 @@ def main(argv):
     # Load all the arguments and return them
     source_filename, output_filename, k_value = load_arguments(argv)
 
-    # Load image in
-    source_image_gray = cv2.imread(source_filename, cv2.IMREAD_GRAYSCALE)
-    source_image = cv2.imread(source_filename)
-
-    # Display debug information if requested
-    if True:
-        print("Starting temporal image shape", source_image_gray.shape)
-        print("Max BGR Value:", np.max(source_image))
-        print("Max Gray scale Value:", np.max(source_image_gray))
-
-    # Remove bottom boarder
-    # TODO: Find dynamic way to do this
-    source_image_gray = source_image_gray[0:-35, :]
-    source_image = source_image[0:-35, :]
-
-    # Display debug information if requested
-    if True:
-        print("After Removing bottom shape", source_image_gray.shape)
-        print("Max BGR Value:", np.max(source_image))
-        print("Max Gray scale Value:", np.max(source_image_gray))
-
-    # Create the K_IMAGE and then turn it into a banded image, and finally bitwise and the images together
-    k_image = try_k_means(source_image, k_value)
-    banded_image = create_banding_color(k_image)
-    final_mask = cv2.bitwise_and(banded_image, k_image)
-
-    k_image_gray = cv2.cvtColor(k_image, cv2.COLOR_BGR2GRAY)
-    banded_gray = create_banding_gray(k_image_gray)
-    final_mask_gray = cv2.bitwise_and(banded_gray, k_image_gray)
-
-    # Add the bottom 35 rows of pixels back
-    k_image = np.vstack((k_image, k_image[-35:, :]))
-    banded_image = np.vstack((banded_image, banded_image[-35:, :]))
-    final_mask = np.vstack((final_mask, final_mask[-35:, :]))
-    final_mask_gray = np.vstack((final_mask_gray, final_mask_gray[-35:, :]))
-
-    # Save the image
-    cv2.imwrite("kmean-" + output_filename, k_image)
-    cv2.imwrite("banding-" + output_filename, banded_image)
-    cv2.imwrite(output_filename, final_mask)
-    cv2.imwrite("gray-" + output_filename, final_mask_gray)
-
-    # Display image if debug is on and Save extra analysis images
-    if True:
-        extra_debug_image_analysis(banded_image, k_image, output_filename)
+    final_mask = build_mask(k_value, output_filename, source_filename)
 
     print("")
     print("Successfully completed, look for file", output_filename)
+
+    return final_mask
 
 
 if __name__ == "__main__":

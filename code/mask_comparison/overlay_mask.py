@@ -71,7 +71,7 @@ def main():
     image_folder = '../image_subtractor/images/'
     output_folder = './overlaid/'
     overlay = '../mask_generator/mask.png'
-    alpha = 0.5
+    alpha = 0.6
 
     overlay_all(image_folder, output_folder, overlay, alpha)
 

@@ -8,7 +8,6 @@ __pycache__/
 
 # Ignore the images
 *.png
-*.jpg
 
 # Add pdf files to ignore
 *.pdf

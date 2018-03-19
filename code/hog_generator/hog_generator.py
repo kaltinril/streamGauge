@@ -44,14 +44,14 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
 
     # Asserts for debugging and enforcing data rules for parameters
     assert stability_mask.shape == total_iamge.shape, "Mask and Image different sizes, must be same size"
-    assert region_size[0] <= total_iamge.shape[0] and region_size[1] <= total_iamge.shape[1], \
+    assert region_size[0] <= total_iamge.shape[1] and region_size[1] <= total_iamge.shape[0], \
         "Region Size large than Image Dimensions"
     assert 0 < region_threshold <= 1.0, "Region Threshold outside of range [0,1)"
     for pixels_per_cell in pixels_per_cell_list:
         assert pixels_per_cell[0] > 0 and pixels_per_cell[1] > 0, "Pixels per Cell items must be positive"
         assert cells_per_block[0] > 0 and cells_per_block[1] > 0, "Cells per Block must be positive"
-        assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge.shape[0] and pixels_per_cell[1]*cells_per_block[1] \
-            <= total_iamge.shape[1], "Image too small for number of cells and blocks"
+        assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge.shape[1] and pixels_per_cell[1]*cells_per_block[1] \
+            <= total_iamge.shape[0], "Image too small for number of cells and blocks"
         assert offset_step[0] < region_size[0] and offset_step[1] < region_size[1], "Offset Step too large"
 
     # Create the folder to put the HOG files if none exists. Try except handles race condition, unlike straight makedirs
@@ -66,52 +66,57 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     for cur_offset_x in range(0, region_size[0], offset_step[0]):
         for cur_offset_y in range(0, region_size[1], offset_step[1]):
             # looks at each tile of the grid with the current offset to produce ROIs
-            for cur_region_y in range(0, total_iamge.shape[1]//region_size[1]):
-                for cur_region_x in range(0, total_iamge.shape[0]//region_size[0]):
-                    hog_info_total = []
-                    for pixels_per_cell in pixels_per_cell_list:
-                        region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
-                        masked_region = stability_mask[region_coords[0]:region_coords[0]+region_size[0],
-                                                       region_coords[1]:region_coords[1]+region_size[1]]
-                        image_region = total_iamge[region_coords[0]:region_coords[0]+region_size[0],
-                                                   region_coords[1]:region_coords[1]+region_size[1]]
+            for cur_region_y in range(0, total_iamge.shape[0]//region_size[0]):
+                try:
+                    for cur_region_x in range(0, total_iamge.shape[1]//region_size[1]):
+                        hog_info_total = []
+                        for pixels_per_cell in pixels_per_cell_list:
+                            region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
+                            masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
+                                                           region_coords[0]:region_coords[0]+region_size[0]]
+                            image_region = total_iamge[region_coords[1]:region_coords[1]+region_size[1],
+                                                       region_coords[0]:region_coords[0]+region_size[0]]
 
-                        # this can be changed to return counts of each unique entry, so we can calculate percents
-                        unique, unique_counts = np.unique(masked_region, return_counts=True)
-                        sum_unique = region_size[0]*region_size[1]
-                        unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
-                        if unique_percents.max() < region_threshold and banded:
-                            break   # we can break this loop, as due to banding all regions in this row will hit this line
+                            # this can be changed to return counts of each unique entry, so we can calculate percents
+                            unique, unique_counts = np.unique(masked_region, return_counts=True)
+                            sum_unique = region_size[0]*region_size[1]
+                            unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
+                            if unique_percents.max() < region_threshold and banded:
+                                # break   # we can break this loop, as due to banding all regions in this row will hit this line
+                                raise BetweenMasksException("Between bands") # hard to refactor as func, cant label and break out of nested loops in python -- so we use exceptions
 
-                        # create hog for region
+                            # create hog for region
 
-                        # unraveled shape = (n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
-                        hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
-                                       cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
-                                       feature_vector=False)
+                            # unraveled shape = (n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
+                            hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
+                                           cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
+                                           feature_vector=False)
 
-                        # list of blocks (each with a matrix of cells containing orientations)
-                        hog_info = np.reshape(hog_info, (hog_info.shape[0]*hog_info.shape[1], hog_info.shape[2],
-                                                         hog_info.shape[3], hog_info.shape[4]))
+                            # list of blocks (each with a matrix of cells containing orientations)
+                            hog_info = np.reshape(hog_info, (hog_info.shape[0]*hog_info.shape[1], hog_info.shape[2],
+                                                             hog_info.shape[3], hog_info.shape[4]))
 
-                        # now flatten the cells to a list
-                        hog_info = np.reshape(hog_info, (hog_info.shape[0], hog_info.shape[1]*hog_info.shape[2],
-                                                         hog_info.shape[3]))
+                            # now flatten the cells to a list
+                            hog_info = np.reshape(hog_info, (hog_info.shape[0], hog_info.shape[1]*hog_info.shape[2],
+                                                             hog_info.shape[3]))
 
-                        # now average the cells
-                        hog_info = np.mean(hog_info, axis=1)
+                            # now average the cells
+                            hog_info = np.mean(hog_info, axis=1)
 
-                        # and average the blocks
-                        hog_info = np.mean(hog_info, axis=0)
+                            # and average the blocks
+                            hog_info = np.mean(hog_info, axis=0)
 
-                        hog_info_total.append(hog_info)
+                            hog_info_total.append(hog_info)
 
-                    hog_info_total = np.array(hog_info_total).flatten()
-                    # format the string for the filename
-                    new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
-                                                                          cur_offset_x, cur_offset_y, image_filename))
-                    # save hog info, alongside other relevant info (pixel coords, base image file name)
-                    np.savez_compressed(new_filename, hog_info_total)
+                        hog_info_total = np.array(hog_info_total).flatten()
+
+                        # format the string for the filename
+                        new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
+                                                                              cur_offset_x, cur_offset_y, image_filename))
+                        # save hog info, alongside other relevant info (pixel coords, base image file name)
+                        np.savez_compressed(new_filename, hog_info_total)
+                except BetweenMasksException:
+                    pass
 
     print("Done Creating ROI HOGs")
 
@@ -130,7 +135,7 @@ def load_hogs(folder_dir):
     for file in glob.glob("*.npz"):
         hog_list.append(load_hog(file))
         file_list.append(file)
-    return np.array(hog_list), file_list
+    return np.vstack(hog_list), file_list
 
 
 def load_hog(file):
@@ -174,6 +179,10 @@ def PCA(data_in, dim_out, standardize=True):
     data_out = pca.fit_transform(data_out)
     return data_out
 
+
+class BetweenMasksException(Exception):
+    def __init__(self, message):
+        self.message = message
 
 if __name__ == '__main__':
     # Simple Example Use Scenario

@@ -1,5 +1,6 @@
 import numpy as np
 import hog_generator as hg
+import sklearn as sk
 
 
 def train(data_loc):

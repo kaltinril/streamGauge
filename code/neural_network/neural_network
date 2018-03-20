@@ -58,9 +58,8 @@ def predict(weights_loc, img, roi_size, pixels_per_cell_list, orientations=9, ce
                 hog_info_total.append(hog_info)
             hog_info_total = np.array(hog_info_total).flatten()
 
-            # run hog through ann and get classification
-            # store classification as prediction
-            pass
+            # run hog through ann to get classification, and store it
+            roi_predictions[y, x] = ann.predict(hog_info_total)
 
     # using roi classification, classify pixels
     pixel_predictions = np.zeros(img.shape[0], img.shape[1])

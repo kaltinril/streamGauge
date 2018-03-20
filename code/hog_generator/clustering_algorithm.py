@@ -25,8 +25,8 @@ def display_categories(cat_data, base_image, filenames):
         overlay = output.copy()
         roi_loc = hg.parse_filename(filenames[i])
         # for whatever reason, cv2 holds x and y opposite of np, or at least opposite of the way it was stored/retrieved
-        tl_corner = (roi_loc['region'][1]*roi_dims[1] + roi_loc['offset'][1], roi_loc['region'][0]*roi_dims[0] + roi_loc['offset'][0])
-        br_corner = (tl_corner[0] + roi_dims[1], tl_corner[1] + roi_dims[0])
+        tl_corner = (roi_loc['region'][0]*roi_dims[0] + roi_loc['offset'][0], roi_loc['region'][1]*roi_dims[1] + roi_loc['offset'][1])
+        br_corner = (tl_corner[0] + roi_dims[0], tl_corner[1] + roi_dims[1])
         print("ITER: ", i, " LOC: ", roi_loc, " CORNER: ", br_corner, " CAT: ", roi_memberships[i])
         color = colors[roi_memberships[i]]
         cv2.rectangle(overlay, tl_corner, br_corner, color, -1)

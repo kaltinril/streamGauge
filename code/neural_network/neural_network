@@ -1,22 +1,47 @@
 import numpy as np
 import hog_generator as hg
-import sklearn as sk
+import sklearn.neural_network as sk
+import pickle
+import time
 
 
-def train(data_loc):
+def train(data_loc, weights_loc=None):
     # retrieve data from files
-    all_data = hg.load_hogs(data_loc)
-    # split data to training and validation. Just random, no boosting for now. 80/20 rule
+    data, metadata, bands = hg.load_hogs(data_loc)
 
+    #build ANN object
+    ann = sk.MLPRegressor(hidden_layer_sizes=100, activation='logistic', learning_rate_init=.01, max_iter=10000,
+                          batch_size=200)   # lots of other options exist, check documentation
+
+    if weights_loc is not None: # TODO: handle file not found / bad file names / non strings
+        weights_file = open(weights_loc, 'rb')
+        weights = pickle.load(weights_file)
+        weights_file.close()
+        ann.set_params(weights)
     # train the ANN
+    ann.fit(data, bands)
 
-    # save the weights and statistics
+    # save the weights
+    weights = ann.get_params()
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    weights_file = open('ann_weights_' + timestr + '.pkl', 'wb')
+    pickle.dump(weights, weights_file)
+    weights_file.close()
     raise NotImplementedError
 
 
 def test(weights_loc, img):
     # load the weights and prepare objects
-    # classify pixels in image
+    ann = sk.MLPRegressor(hidden_layer_sizes=100, activation='logistic', learning_rate_init=.01, max_iter=10000,
+                          batch_size=200)
+
+    weights_file = open(weights_loc, 'rb')
+    weights = pickle.load(weights_file)
+    weights_file.close()
+    ann.set_params(weights)
+
+    # produce all possible roi and classify them
+    # using roi classification, classify pixels
     raise NotImplementedError
 
 

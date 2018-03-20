@@ -70,6 +70,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                 try:
                     for cur_region_x in range(0, total_iamge.shape[1]//region_size[1]):
                         hog_info_total = []
+                        band = -1
                         for pixels_per_cell in pixels_per_cell_list:
                             region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
                             masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
@@ -81,13 +82,14 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                             unique, unique_counts = np.unique(masked_region, return_counts=True)
                             sum_unique = region_size[0]*region_size[1]
                             unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
-                            if unique_percents.max() < region_threshold and banded:
-                                # break   # we can break this loop, as due to banding all regions in this row will hit this line
+                            if unique_percents.max() < region_threshold and banded: # TODO: add break to x loop for when banded is false
                                 raise BetweenMasksException("Between bands") # hard to refactor as func, cant label and break out of nested loops in python -- so we use exceptions
+                            most_common_index = np.argmax(unique_counts)
+                            band = unique[most_common_index]
 
                             # create hog for region
 
-                            # unraveled shape = (n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
+                            # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
                             hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
                                            cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
                                            feature_vector=False)
@@ -112,9 +114,10 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
 
                         # format the string for the filename
                         new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
-                                                                              cur_offset_x, cur_offset_y, image_filename))
+                                        cur_offset_x, cur_offset_y, image_filename))
+                        assert band >= 0
                         # save hog info, alongside other relevant info (pixel coords, base image file name)
-                        np.savez_compressed(new_filename, hog_info_total)
+                        np.savez_compressed(new_filename, hog_info=hog_info_total, band=band)
                 except BetweenMasksException:
                     pass
 
@@ -130,12 +133,15 @@ def load_hogs(folder_dir):
     same order
     """
     hog_list = []
+    band_list = []
     file_list = []
     os.chdir(folder_dir)    # TODO: handle folder not found issues
     for file in glob.glob("*.npz"):
-        hog_list.append(load_hog(file))
+        hog_info, band = load_hog(file)
+        hog_list.append(hog_info)
+        band_list.append(band)
         file_list.append(file)
-    return np.vstack(hog_list), file_list
+    return np.vstack(hog_list), file_list, np.vstack(band_list)
 
 
 def load_hog(file):
@@ -145,7 +151,8 @@ def load_hog(file):
     :param file: A string representing the name of a .npz file, or the file object itself.
     :return: The ndarray contained in the file, decompressed, extracted, and ready to use.
     """
-    return np.load(file)['arr_0']   # TODO: handle file not found issues
+    loaded_file = np.load(file)
+    return loaded_file['hog_info'], loaded_file['band']   # TODO: handle file not found issues
 
 
 def parse_filename(filename):
@@ -184,6 +191,7 @@ class BetweenMasksException(Exception):
     def __init__(self, message):
         self.message = message
 
+
 if __name__ == '__main__':
     # Simple Example Use Scenario
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
@@ -195,7 +203,7 @@ if __name__ == '__main__':
     mask[0:mask.shape[0]//2, 0:-1] = 0
     # remove same pixel border from image
     im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
-    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (50, 50), [(4, 4), (8, 8)], (10, 10))
+    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (45, 45), [(5, 5), (9, 9), (15, 15)], (15, 15))
 
     # old code for creating and displaying the HOG image and greyscale input
     """

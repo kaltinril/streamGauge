@@ -3,9 +3,11 @@ import hog_generator as hg
 import sklearn.neural_network as sk
 import pickle
 import time
+from skimage.feature import hog
 
 
 def train(data_loc, weights_loc=None):
+    raise NotImplementedError
     # retrieve data from files
     data, metadata, bands = hg.load_hogs(data_loc)
 
@@ -27,10 +29,10 @@ def train(data_loc, weights_loc=None):
     weights_file = open('ann_weights_' + timestr + '.pkl', 'wb')
     pickle.dump(weights, weights_file)
     weights_file.close()
+
+
+def predict(weights_loc, img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2)):
     raise NotImplementedError
-
-
-def test(weights_loc, img):
     # load the weights and prepare objects
     ann = sk.MLPRegressor(hidden_layer_sizes=100, activation='logistic', learning_rate_init=.01, max_iter=10000,
                           batch_size=200)
@@ -40,10 +42,41 @@ def test(weights_loc, img):
     weights_file.close()
     ann.set_params(weights)
 
-    # produce all possible roi and classify them
+    # produce all possible roi hogs and classify them
+    roi_predictions = np.ones((img.shape[0]-roi_size[1], img.shape[1]-roi_size[0]))
+    roi_predictions = roi_predictions*-1    # set default value to -1 for clear indication of failures
+    for y in range(roi_predictions.shape[0]):
+        for x in range(roi_predictions.shape[1]):
+            # pull roi from image
+            roi_corner = (x+roi_size[0]//2, y+roi_size[1]//2) # top left corner, (x, y)
+            cur_roi = img[roi_corner[1]:roi_corner[1]+roi_size[1], roi_corner[0]:roi_corner[0]+roi_size[0]]
+
+            # create total hog feature of roi
+            hog_info_total = []
+            for pixels_per_cell in pixels_per_cell_list:
+                hog_info = hg.make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block)
+                hog_info_total.append(hog_info)
+            hog_info_total = np.array(hog_info_total).flatten()
+
+            # run hog through ann and get classification
+            # store classification as prediction
+            pass
+
     # using roi classification, classify pixels
-    raise NotImplementedError
+    pixel_predictions = np.zeros(img.shape[0], img.shape[1])
+    pixel_predictions = pixel_predictions*-1    # set default value to -1 for clear indication of failures
+    for y in range(pixel_predictions.shape[0]):
+        for x in range(pixel_predictions.shape[1]):
+            pass
+    return pixel_predictions
 
 
 if __name__ == '__main__':
     raise NotImplementedError
+    while True:
+        user_input = input("Train or Predict")
+        user_input = user_input.lower()
+        if user_input == 'train':
+            pass
+        else:
+            pass

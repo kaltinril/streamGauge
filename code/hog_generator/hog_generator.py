@@ -90,23 +90,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                             # create hog for region
 
                             # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
-                            hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
-                                           cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
-                                           feature_vector=False)
-
-                            # list of blocks (each with a matrix of cells containing orientations)
-                            hog_info = np.reshape(hog_info, (hog_info.shape[0]*hog_info.shape[1], hog_info.shape[2],
-                                                             hog_info.shape[3], hog_info.shape[4]))
-
-                            # now flatten the cells to a list
-                            hog_info = np.reshape(hog_info, (hog_info.shape[0], hog_info.shape[1]*hog_info.shape[2],
-                                                             hog_info.shape[3]))
-
-                            # now average the cells
-                            hog_info = np.mean(hog_info, axis=1)
-
-                            # and average the blocks
-                            hog_info = np.mean(hog_info, axis=0)
+                            hog_info = make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block)
 
                             hog_info_total.append(hog_info)
 
@@ -122,6 +106,29 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                     pass
 
     print("Done Creating ROI HOGs")
+
+
+def make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block):
+    # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
+    hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
+                   cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
+                   feature_vector=False)
+
+    # list of blocks (each with a matrix of cells containing orientations)
+    hog_info = np.reshape(hog_info, (hog_info.shape[0] * hog_info.shape[1], hog_info.shape[2],
+                                     hog_info.shape[3], hog_info.shape[4]))
+
+    # now flatten the cells to a list
+    hog_info = np.reshape(hog_info, (hog_info.shape[0], hog_info.shape[1] * hog_info.shape[2],
+                                     hog_info.shape[3]))
+
+    # now average the cells
+    hog_info = np.mean(hog_info, axis=1)
+
+    # and average the blocks
+    hog_info = np.mean(hog_info, axis=0)
+
+    return hog_info
 
 
 def load_hogs(folder_dir):

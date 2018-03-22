@@ -3,6 +3,10 @@ import numpy as np
 
 MOUSE_STATE = 'up'
 
+# https://docs.opencv.org/3.1.0/d7/dfc/group__highgui.html#gga927593befdddc7e7013602bca9b079b0aa3536f83b6f48da5121041f58fc7a683
+# https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_mouse_handling/py_mouse_handling.html
+
+
 # mouse callback function
 def draw_circle(event,x,y,flags,param):
     global MOUSE_STATE

@@ -10,6 +10,9 @@ from sklearn import decomposition
 from sklearn.preprocessing import StandardScaler
 
 
+def create_hog_histogram():
+
+
 # need to clip total_image to be same size as stability mask before using this function
 def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, pixels_per_cell_list,
                        offset_step=(1, 1), region_threshold=0.9, orientations=9, cells_per_block=(2, 2),
@@ -86,25 +89,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                                 raise BetweenMasksException("Between bands") # hard to refactor as func, cant label and break out of nested loops in python -- so we use exceptions
 
                             # create hog for region
-
-                            # unraveled shape = (n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
-                            hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
-                                           cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
-                                           feature_vector=False)
-
-                            # list of blocks (each with a matrix of cells containing orientations)
-                            hog_info = np.reshape(hog_info, (hog_info.shape[0]*hog_info.shape[1], hog_info.shape[2],
-                                                             hog_info.shape[3], hog_info.shape[4]))
-
-                            # now flatten the cells to a list
-                            hog_info = np.reshape(hog_info, (hog_info.shape[0], hog_info.shape[1]*hog_info.shape[2],
-                                                             hog_info.shape[3]))
-
-                            # now average the cells
-                            hog_info = np.mean(hog_info, axis=1)
-
-                            # and average the blocks
-                            hog_info = np.mean(hog_info, axis=0)
+                            hog_info = create_hog_info(cells_per_block, image_region, orientations, pixels_per_cell)
 
                             hog_info_total.append(hog_info)
 
@@ -119,6 +104,29 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
                     pass
 
     print("Done Creating ROI HOGs")
+
+
+# From an image region, extracts the final single histogram for that region using HOG
+def create_hog_info(cells_per_block, image_region, orientations, pixels_per_cell):
+    # unraveled shape = (n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
+    hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
+                   cells_per_block=cells_per_block, visualise=False, block_norm='L2-Hys',
+                   feature_vector=False)
+
+    # list of blocks (each with a matrix of cells containing orientations)
+    hog_info = np.reshape(hog_info, (hog_info.shape[0] * hog_info.shape[1], hog_info.shape[2],
+                                     hog_info.shape[3], hog_info.shape[4]))
+
+    # now flatten the cells to a list
+    hog_info = np.reshape(hog_info, (hog_info.shape[0], hog_info.shape[1] * hog_info.shape[2],
+                                     hog_info.shape[3]))
+
+    # now average the cells
+    hog_info = np.mean(hog_info, axis=1)
+
+    # and average the blocks
+    hog_info = np.mean(hog_info, axis=0)
+    return hog_info
 
 
 def load_hogs(folder_dir):

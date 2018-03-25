@@ -10,9 +10,6 @@ from sklearn import decomposition
 from sklearn.preprocessing import StandardScaler
 
 
-def create_hog_histogram():
-
-
 # need to clip total_image to be same size as stability mask before using this function
 def create_hog_regions(total_image, stability_mask, image_filename, region_size, pixels_per_cell_list,
                        offset_step=(1, 1), region_threshold=0.9, orientations=9, cells_per_block=(2, 2),

@@ -8,8 +8,14 @@ MOUSE_STATE = 'up'
 
 
 # mouse callback function
-def draw_circle(event,x,y,flags,param):
+def draw_circle(event, x, y, flags, param):
     global MOUSE_STATE
+
+    color = (255, 0, 0)
+    radius = 50
+    position = (x, y)
+    thickness = -1  # positive = thickness of circle line, negative means fill
+
     if event == cv2.EVENT_LBUTTONDOWN:
         MOUSE_STATE = 'down'
     
@@ -17,7 +23,7 @@ def draw_circle(event,x,y,flags,param):
         MOUSE_STATE = 'up'
         
     if MOUSE_STATE == 'down':
-        cv2.circle(img,(x,y),50,(255,0,0),-1)
+        cv2.circle(img, position, radius, color, thickness)
         
 
 # Create a black image, a window and bind the function to window

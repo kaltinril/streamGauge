@@ -14,7 +14,7 @@ def create_hog_histogram():
 
 
 # need to clip total_image to be same size as stability mask before using this function
-def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, pixels_per_cell_list,
+def create_hog_regions(total_image, stability_mask, image_filename, region_size, pixels_per_cell_list,
                        offset_step=(1, 1), region_threshold=0.9, orientations=9, cells_per_block=(2, 2),
                        banded=True):
     """
@@ -23,7 +23,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     be ignored and not saved. The method of culling data helps to only select data that clearly defines a type of object
     so the ANN can more accurately train as there is a greater difference in data between the categories of objects.
 
-    :param total_iamge: A 2D array of pixels representing a GREYSCALE image (color is not accepted).
+    :param total_image: A 2D array of pixels representing a GREYSCALE image (color is not accepted).
     :param stability_mask: A 2D array of values, each unique value is a category of object, so the value 0 may be land,
     while 1 may be water. This array must be the same shape as the total image.
     :param image_filename: A string representing the name of the image. This should match the name of the file the
@@ -46,15 +46,15 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     print("Creating ROI HOGs")
 
     # Asserts for debugging and enforcing data rules for parameters
-    assert stability_mask.shape == total_iamge.shape, "Mask and Image different sizes, must be same size"
-    assert region_size[0] <= total_iamge.shape[1] and region_size[1] <= total_iamge.shape[0], \
+    assert stability_mask.shape == total_image.shape, "Mask and Image different sizes, must be same size"
+    assert region_size[0] <= total_image.shape[1] and region_size[1] <= total_image.shape[0], \
         "Region Size large than Image Dimensions"
     assert 0 < region_threshold <= 1.0, "Region Threshold outside of range [0,1)"
     for pixels_per_cell in pixels_per_cell_list:
         assert pixels_per_cell[0] > 0 and pixels_per_cell[1] > 0, "Pixels per Cell items must be positive"
         assert cells_per_block[0] > 0 and cells_per_block[1] > 0, "Cells per Block must be positive"
-        assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge.shape[1] and pixels_per_cell[1]*cells_per_block[1] \
-            <= total_iamge.shape[0], "Image too small for number of cells and blocks"
+        assert pixels_per_cell[0]*cells_per_block[0] <= total_image.shape[1] and pixels_per_cell[1] * cells_per_block[1] \
+                                                                                 <= total_image.shape[0], "Image too small for number of cells and blocks"
         assert offset_step[0] < region_size[0] and offset_step[1] < region_size[1], "Offset Step too large"
 
     # Create the folder to put the HOG files if none exists. Try except handles race condition, unlike straight makedirs
@@ -69,16 +69,16 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     for cur_offset_x in range(0, region_size[0], offset_step[0]):
         for cur_offset_y in range(0, region_size[1], offset_step[1]):
             # looks at each tile of the grid with the current offset to produce ROIs
-            for cur_region_y in range(0, total_iamge.shape[0]//region_size[0]):
+            for cur_region_y in range(0, total_image.shape[0]//region_size[0]):
                 try:
-                    for cur_region_x in range(0, total_iamge.shape[1]//region_size[1]):
+                    for cur_region_x in range(0, total_image.shape[1]//region_size[1]):
                         hog_info_total = []
                         for pixels_per_cell in pixels_per_cell_list:
                             region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
                             masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
                                                            region_coords[0]:region_coords[0]+region_size[0]]
-                            image_region = total_iamge[region_coords[1]:region_coords[1]+region_size[1],
-                                                       region_coords[0]:region_coords[0]+region_size[0]]
+                            image_region = total_image[region_coords[1]:region_coords[1] + region_size[1],
+                                           region_coords[0]:region_coords[0]+region_size[0]]
 
                             # this can be changed to return counts of each unique entry, so we can calculate percents
                             unique, unique_counts = np.unique(masked_region, return_counts=True)

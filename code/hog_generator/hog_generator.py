@@ -186,16 +186,22 @@ class BetweenMasksException(Exception):
 
 if __name__ == '__main__':
     # Simple Example Use Scenario
-    filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
-    im = cv2.imread(filename)
+    filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
+    path, filename = os.path.split(filename_and_path)
+    filename_minus_ext, ext = os.path.splitext(filename)
+    im = cv2.imread(filename_and_path)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
     # make a fake mask for now.
     mask = np.ones((im.shape[0]-20, im.shape[1]-20))     # 10 pixel border on either end = 20 pixels removed from both dims
+
     # zero out upper half to test the ROI culling portion of the HOG generation algorithm
     mask[0:mask.shape[0]//2, 0:-1] = 0
+
     # remove same pixel border from image
     im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
-    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (50, 50), [(4, 4), (8, 8)], (10, 10))
+
+    create_hog_regions(im, mask, filename_minus_ext, (50, 50), [(4, 4), (8, 8)], (10, 10))
 
     # old code for creating and displaying the HOG image and greyscale input
     """

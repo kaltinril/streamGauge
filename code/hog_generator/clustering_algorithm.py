@@ -51,7 +51,7 @@ if __name__ == '__main__':
     filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
     im = cv2.imread(filename)
     #im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    final_partitions, metadata, fpc = fuzzy_c_means(3)
+    final_partitions, metadata, fpc = fuzzy_c_means(5)
     # kmeans_partition = k_means(3)
     display_categories(final_partitions, im, metadata)
     # display_categories(kmeans_partition, im, metadata)

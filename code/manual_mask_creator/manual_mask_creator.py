@@ -45,6 +45,12 @@ def draw_circle(event, x, y, flags, param):
     if flags == cv2.EVENT_FLAG_LBUTTON:
         cv2.circle(OUTPUT_IMAGE, position, radius, color, thickness)
 
+    # Put back the original image
+    if flags == cv2.EVENT_FLAG_RBUTTON:
+        OUTPUT_IMAGE[position[1]-radius:position[1]+radius,
+                     position[0]-radius:position[0]+radius] = ORIGINAL_IMAGE[position[1]-radius:position[1]+radius,
+                                                                             position[0]-radius:position[0]+radius]
+
 
 def select_image():
     filename = askopenfilename(initialdir="./",
@@ -69,6 +75,8 @@ def select_image():
 
 # Create a black image, a window and bind the function to window
 image_name, image = select_image()
+
+ORIGINAL_IMAGE = image
 
 OUTPUT_IMAGE = np.asarray(list(image))  # Deep clone/copy
 

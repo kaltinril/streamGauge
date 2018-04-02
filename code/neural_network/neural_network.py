@@ -26,11 +26,13 @@ def train(data_loc):
     ann_file.close()
 
 
-def predict(ann_loc, img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride = 45):
+def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride = 45):
     # load the weights and prepare objects
     ann_file = open(ann_loc, 'rb')
     ann = pickle.load(ann_file)
     ann_file.close()
+
+    img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
 
     # produce all possible roi hogs and classify them
     roi_predictions = np.ones(((img.shape[0]-roi_size[1])//stride, (img.shape[1]-roi_size[0])//stride))
@@ -39,12 +41,17 @@ def predict(ann_loc, img, roi_size, pixels_per_cell_list, orientations=9, cells_
         for x in range(0, roi_predictions.shape[1]):
             # pull roi from image
             cur_roi = img[y:y+roi_size[1], x:x+roi_size[0]]
+            cur_roi_color = color_img[y:y + roi_size[1], x:x + roi_size[0]]
 
             # create total hog feature of roi
             hog_info_total = []
             for pixels_per_cell in pixels_per_cell_list:
                 hog_info = hg.make_hog_partial(cur_roi, orientations, pixels_per_cell, cells_per_block)
                 hog_info_total.append(hog_info)
+            color_hist = hg.create_color_histogram(cur_roi_color)
+
+            # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
+            hog_info_total = hog_info_total + color_hist  # In Python this is joining the two arrays
             hog_info_total = np.array(hog_info_total).flatten()
 
             # run hog through ann to get classification, and store it
@@ -64,7 +71,7 @@ def predict(ann_loc, img, roi_size, pixels_per_cell_list, orientations=9, cells_
             if relevant_roi_loc[0] < roi_predictions.shape[0] and relevant_roi_loc[2] < roi_predictions.shape[1]:
                 if relevant_roi_loc[0] != relevant_roi_loc[1] and relevant_roi_loc[2] != relevant_roi_loc[3]:
                     relevant_roi = roi_predictions[relevant_roi_loc[0]:relevant_roi_loc[1],
-                                   relevant_roi_loc[2]:relevant_roi_loc[3]]
+                                                   relevant_roi_loc[2]:relevant_roi_loc[3]]
                 else:
                     relevant_roi = np.array([roi_predictions[relevant_roi_loc[0], relevant_roi_loc[2]]])
                 relevant_roi = relevant_roi.flatten()
@@ -81,7 +88,7 @@ def predict(ann_loc, img, roi_size, pixels_per_cell_list, orientations=9, cells_
             else:
                 prediction = -1
             # prediction = round(np.mean(relevant_roi, dtype=np.float64))
-            pixel_predictions[y,x] = prediction
+            pixel_predictions[y, x] = prediction
             if x % 100 == 0:
                 print("PIXEL | x: ", x, " y: ", y, " predict: ", prediction)
     return pixel_predictions
@@ -116,5 +123,5 @@ if __name__ == '__main__':
             filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
             img = cv2.imread(filename)
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            pixel_predictions = predict("../ann_1.pkl", gs, (45, 45), [(3, 3), (5, 5), (9, 9)])
+            pixel_predictions = predict("../ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)])
             view_predict(img, pixel_predictions)

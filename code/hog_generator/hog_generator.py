@@ -72,7 +72,8 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                 try:
                     for cur_region_x in range(0, image_grey.shape[1]//region_size[1]):
                         hog_info_total = []
-                        band = -1
+                        band = np.ones((1,))
+                        band *= -1
                         
                         region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
                         masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
@@ -88,12 +89,12 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                             # break   # we can break this loop, as due to banding all regions in this row will hit this line
                             raise BetweenMasksException("Between bands") # hard to refactor as func, cant label and break out of nested loops in python -- so we use exceptions
                         most_common_index = np.argmax(unique_counts)
-                        band = unique[most_common_index]
+                        band[0] = unique[most_common_index]
                         
                         # create hog for region
                         # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
                         for pixels_per_cell in pixels_per_cell_list:
-                            hog_info = make_hog_partial(cells_per_block, image_region, orientations, pixels_per_cell)
+                            hog_info = make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block)
 
                             hog_info_total.append(hog_info)
 
@@ -103,13 +104,15 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                         color_hist = create_color_histogram(color_image_region)
 
                         # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
-                        hog_info_total = hog_info_total + color_hist  # In Python this is joining the two arrays
+                        hog_info_total = hog_info_total  # In Python this is joining the two arrays
+                        color_hist = np.array(color_hist).flatten()
                         hog_info_total = np.array(hog_info_total).flatten()
+                        hog_info_total = np.append(hog_info_total, color_hist)
 
                         # format the string for the filename
                         new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
                                         cur_offset_x, cur_offset_y, image_filename))
-                        assert band >= 0
+                        assert band[0] >= 0
                         # save hog info, alongside other relevant info (pixel coords, base image file name)
                         np.savez_compressed(new_filename, hog_info=hog_info_total, band=band)
                 except BetweenMasksException:
@@ -175,7 +178,7 @@ def load_hogs(folder_dir):
     for file in glob.glob("*.npz"):
         hog_info, band = load_hog(file)
         hog_list.append(hog_info)
-        band_list.append(band)
+        band_list.append(band[0])
         file_list.append(file)
     return np.vstack(hog_list), file_list, np.vstack(band_list)
 
@@ -244,7 +247,7 @@ if __name__ == '__main__':
     # remove same pixel border from image
     image_color = image_color[10: image_color.shape[0]-10, 10:image_color.shape[1]-10]
 
-    create_hog_regions(image_color, mask, filename_minus_ext, (50, 50), [(4, 4), (8, 8)], (10, 10))
+    create_hog_regions(image_color, mask, filename_minus_ext, (45, 45), [(3, 3), (5, 5), (9, 9)], (9, 9))
 
     # old code for creating and displaying the HOG image and greyscale input
     """

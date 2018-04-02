@@ -120,7 +120,7 @@ if __name__ == '__main__':
             data_loc = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator\\HOG Files"
             train(data_loc)
         else:
-            filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
+            filename = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
             img = cv2.imread(filename)
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             pixel_predictions = predict("../ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)])

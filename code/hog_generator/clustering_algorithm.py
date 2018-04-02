@@ -3,20 +3,29 @@ import skfuzzy.cluster as fuzzy
 import hog_generator as hg
 import cv2
 # import matplotlib.pyplot as plt
+import sklearn.cluster as sk
 
 def fuzzy_c_means(num_categories):
-    data, metadata = hg.load_hogs('./HOG Files')
+    data, metadata, labels = hg.load_hogs('./HOG Files')
     #data = hg.PCA(data, 15)
     # data must be of size (S, N) where S is the number of features in a vector, and N is the number of feature vectors
     data = data.T
     centroids, final_partitions, initial_partition, final_dist, func_history, num_iter, fpc = \
-        fuzzy.cmeans(data=data, c=num_categories, m=2, error=0.0005, maxiter=10000, init=None)
+        fuzzy.cmeans(data=data, c=num_categories, m=-2, error=0.00005, maxiter=100000, init=None)
     return final_partitions, metadata, fpc
+
+def k_means(num_categories):
+    data, metadata, labels = hg.load_hogs('C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator\\HOG Files')
+    kmeans_info = sk.KMeans(n_clusters=num_categories, init="k-means++", max_iter=10000, n_jobs=-1).fit(data)
+    return kmeans_info.labels_
 
 
 def display_categories(cat_data, base_image, filenames):
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (128, 128, 128), (153, 0, 76), (0, 153, 0)]
-    roi_memberships = np.argmax(cat_data, axis=0)
+    if len(cat_data.shape) == 1:    # if not fuzzy, membership will just declare the categories, not give confidence of each cat
+        roi_memberships = cat_data
+    else:
+        roi_memberships = np.argmax(cat_data, axis=0)
     overlay = base_image.copy()
     output = base_image.copy()
     roi_dims = (50, 50)
@@ -43,4 +52,6 @@ if __name__ == '__main__':
     im = cv2.imread(filename)
     #im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     final_partitions, metadata, fpc = fuzzy_c_means(5)
+    # kmeans_partition = k_means(3)
     display_categories(final_partitions, im, metadata)
+    # display_categories(kmeans_partition, im, metadata)

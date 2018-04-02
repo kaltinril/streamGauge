@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 # need to clip total_image to be same size as stability mask before using this function
-def create_hog_regions(total_iamge, stability_mask, image_filename, region_size, pixels_per_cell_list,
+def create_hog_regions(color_image, stability_mask, image_filename, region_size, pixels_per_cell_list,
                        offset_step=(1, 1), region_threshold=0.9, orientations=9, cells_per_block=(2, 2),
                        banded=True):
     """
@@ -20,7 +20,7 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     be ignored and not saved. The method of culling data helps to only select data that clearly defines a type of object
     so the ANN can more accurately train as there is a greater difference in data between the categories of objects.
 
-    :param total_iamge: A 2D array of pixels representing a GREYSCALE image (color is not accepted).
+    :param color_image: A 2D array of pixels that will be converted to a GREYSCALE image (color is not accepted).
     :param stability_mask: A 2D array of values, each unique value is a category of object, so the value 0 may be land,
     while 1 may be water. This array must be the same shape as the total image.
     :param image_filename: A string representing the name of the image. This should match the name of the file the
@@ -42,16 +42,18 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     """
     print("Creating ROI HOGs")
 
+    image_grey = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+
     # Asserts for debugging and enforcing data rules for parameters
-    assert stability_mask.shape == total_iamge.shape, "Mask and Image different sizes, must be same size"
-    assert region_size[0] <= total_iamge.shape[1] and region_size[1] <= total_iamge.shape[0], \
+    assert stability_mask.shape == image_grey.shape, "Mask and Image different sizes, must be same size"
+    assert region_size[0] <= image_grey.shape[1] and region_size[1] <= image_grey.shape[0], \
         "Region Size large than Image Dimensions"
     assert 0 < region_threshold <= 1.0, "Region Threshold outside of range [0,1)"
     for pixels_per_cell in pixels_per_cell_list:
         assert pixels_per_cell[0] > 0 and pixels_per_cell[1] > 0, "Pixels per Cell items must be positive"
         assert cells_per_block[0] > 0 and cells_per_block[1] > 0, "Cells per Block must be positive"
-        assert pixels_per_cell[0]*cells_per_block[0] <= total_iamge.shape[1] and pixels_per_cell[1]*cells_per_block[1] \
-            <= total_iamge.shape[0], "Image too small for number of cells and blocks"
+        assert pixels_per_cell[0]*cells_per_block[0] <= image_grey.shape[1] and pixels_per_cell[1] * cells_per_block[1] \
+                                                                                 <= image_grey.shape[0], "Image too small for number of cells and blocks"
         assert offset_step[0] < region_size[0] and offset_step[1] < region_size[1], "Offset Step too large"
 
     # Create the folder to put the HOG files if none exists. Try except handles race condition, unlike straight makedirs
@@ -66,34 +68,42 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     for cur_offset_x in range(0, region_size[0], offset_step[0]):
         for cur_offset_y in range(0, region_size[1], offset_step[1]):
             # looks at each tile of the grid with the current offset to produce ROIs
-            for cur_region_y in range(0, total_iamge.shape[0]//region_size[0]):
+            for cur_region_y in range(0, image_grey.shape[0]//region_size[0]):
                 try:
-                    for cur_region_x in range(0, total_iamge.shape[1]//region_size[1]):
+                    for cur_region_x in range(0, image_grey.shape[1]//region_size[1]):
                         hog_info_total = []
                         band = -1
-                        for pixels_per_cell in pixels_per_cell_list:
-                            region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
-                            masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
-                                                           region_coords[0]:region_coords[0]+region_size[0]]
-                            image_region = total_iamge[region_coords[1]:region_coords[1]+region_size[1],
+                        
+                        region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
+                        masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
                                                        region_coords[0]:region_coords[0]+region_size[0]]
+                        image_region = image_grey[region_coords[1]:region_coords[1] + region_size[1],
+                                       region_coords[0]:region_coords[0]+region_size[0]]
 
-                            # this can be changed to return counts of each unique entry, so we can calculate percents
-                            unique, unique_counts = np.unique(masked_region, return_counts=True)
-                            sum_unique = region_size[0]*region_size[1]
-                            unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
-                            if unique_percents.max() < region_threshold and banded: # TODO: add break to x loop for when banded is false
-                                raise BetweenMasksException("Between bands") # hard to refactor as func, cant label and break out of nested loops in python -- so we use exceptions
-                            most_common_index = np.argmax(unique_counts)
-                            band = unique[most_common_index]
-
-                            # create hog for region
-
-                            # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
-                            hog_info = make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block)
+                        # this can be changed to return counts of each unique entry, so we can calculate percents
+                        unique, unique_counts = np.unique(masked_region, return_counts=True)
+                        sum_unique = region_size[0]*region_size[1]
+                        unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
+                        if unique_percents.max() < region_threshold and banded:
+                            # break   # we can break this loop, as due to banding all regions in this row will hit this line
+                            raise BetweenMasksException("Between bands") # hard to refactor as func, cant label and break out of nested loops in python -- so we use exceptions
+                        most_common_index = np.argmax(unique_counts)
+                        band = unique[most_common_index]
+                        
+                        # create hog for region
+                        # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
+                        for pixels_per_cell in pixels_per_cell_list:
+                            hog_info = make_hog_partial(cells_per_block, image_region, orientations, pixels_per_cell)
 
                             hog_info_total.append(hog_info)
 
+                        # Create the histogram of colors for this region, we only need to do this once for the X/Y area
+                        color_image_region = color_image[region_coords[1]:region_coords[1] + region_size[1],
+                                             region_coords[0]:region_coords[0] + region_size[0]]
+                        color_hist = create_color_histogram(color_image_region)
+
+                        # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
+                        hog_info_total = hog_info_total + color_hist  # In Python this is joining the two arrays
                         hog_info_total = np.array(hog_info_total).flatten()
 
                         # format the string for the filename
@@ -108,6 +118,25 @@ def create_hog_regions(total_iamge, stability_mask, image_filename, region_size,
     print("Done Creating ROI HOGs")
 
 
+def create_color_histogram(image, bins=8):
+    """
+    Calculates the Color histogram for an image and returns a 3 element Python array of arrays of size bins
+    The size of each array element is [(blues),(greens),(reds)].  Where (color) length = bins count.
+
+    :param image: any size image to perform the histogram on
+    :param bins: (default: 8) - the number of separate slots/groups/bins.  8 means 0-7 is bin 1, 8-15 is bin 2, etc
+    :return: A Python List of length 3, where each element contains an array of bin values for that color channel.
+    """
+
+    colors = []
+    # Loop over the three colors (Blue, Green, Red) (OpenCV has this order)
+    for i in range(0, 3):
+        colors.append(cv2.calcHist([image], [i], None, [bins], [0, 256]))
+
+    return colors
+
+
+# From an image region, extracts the final single histogram for that region using HOG
 def make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block):
     # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
     hog_info = hog(image_region, orientations=orientations, pixels_per_cell=pixels_per_cell,
@@ -201,16 +230,21 @@ class BetweenMasksException(Exception):
 
 if __name__ == '__main__':
     # Simple Example Use Scenario
-    filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
-    im = cv2.imread(filename)
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
+    path, filename = os.path.split(filename_and_path)
+    filename_minus_ext, ext = os.path.splitext(filename)
+    image_color = cv2.imread(filename_and_path)
+
     # make a fake mask for now.
-    mask = np.ones((im.shape[0]-20, im.shape[1]-20))     # 10 pixel border on either end = 20 pixels removed from both dims
+    mask = np.ones((image_color.shape[0]-20, image_color.shape[1]-20))     # 10 pixel border on either end = 20 pixels removed from both dims
+
     # zero out upper half to test the ROI culling portion of the HOG generation algorithm
     mask[0:mask.shape[0]//2, 0:-1] = 0
+
     # remove same pixel border from image
-    im = im[10: im.shape[0]-10, 10:im.shape[1]-10]
-    create_hog_regions(im, mask, 'images_63780012_20180119130234_IMAG0002-100-2', (45, 45), [(5, 5), (9, 9), (15, 15)], (15, 15))
+    image_color = image_color[10: image_color.shape[0]-10, 10:image_color.shape[1]-10]
+
+    create_hog_regions(image_color, mask, filename_minus_ext, (50, 50), [(4, 4), (8, 8)], (10, 10))
 
     # old code for creating and displaying the HOG image and greyscale input
     """

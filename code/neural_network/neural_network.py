@@ -48,11 +48,14 @@ def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, 
             for pixels_per_cell in pixels_per_cell_list:
                 hog_info = hg.make_hog_partial(cur_roi, orientations, pixels_per_cell, cells_per_block)
                 hog_info_total.append(hog_info)
+
             color_hist = hg.create_color_histogram(cur_roi_color)
 
             # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
-            hog_info_total = hog_info_total + color_hist  # In Python this is joining the two arrays
+            hog_info_total = hog_info_total  # In Python this is joining the two arrays
+            color_hist = np.array(color_hist).flatten()
             hog_info_total = np.array(hog_info_total).flatten()
+            hog_info_total = np.append(hog_info_total, color_hist)
 
             # run hog through ann to get classification, and store it
             roi_predictions[y, x] = ann.predict(hog_info_total.reshape(1, -1))
@@ -120,8 +123,9 @@ if __name__ == '__main__':
             data_loc = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator\\HOG Files"
             train(data_loc)
         else:
-            filename = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
+            filename = r"C:/Users/HarrelsonT/PycharmProjects/StreamGauge/code/image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
             img = cv2.imread(filename)
+            assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             pixel_predictions = predict("../ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)])
             view_predict(img, pixel_predictions)

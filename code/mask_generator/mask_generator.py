@@ -50,24 +50,34 @@ def try_k_means(img_color, k_value=DEFAULT_K_VALUE):
 
 def create_banding_gray(image, band_size=DEFAULT_BAND_SIZE):
     img = np.asarray(list(image))
+    img2 = np.asarray(list(image))
 
     if len(image.shape) > 2:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # sample an width by band_size area
+    old_color = 0
+    band_color = 10
     for i in range(0, img.shape[0], band_size):
         roi = img[i:i+band_size, :]
         unique, counts = np.unique(roi, return_counts=True)
         array_position = counts.argmax()
         largest_occurrence = unique[array_position]
-        img[i:i+band_size, :] = largest_occurrence
+
+        if old_color != largest_occurrence:
+            old_color = largest_occurrence
+            band_color *= 2
+
+        img[i:i + band_size, :] = band_color
+        img2[i:i + band_size, :] = largest_occurrence
         print(np.asarray((unique, counts)).T) if DEBUG else None
 
-    return img
+    return img, img2
 
 
 def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
     img = np.asarray(list(image))
+    img2 = np.asarray(list(image))
 
     # sample an width by band_size area
     color_old = []
@@ -89,9 +99,10 @@ def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
             band_color *= 2
 
         img[i:i+band_size, :] = band_color
+        img2[i:i+band_size, :] = combined_color
 
     print(band_color)
-    return img
+    return img, img2
 
 
 def overlay_image(overlay, alpha, background):
@@ -99,6 +110,29 @@ def overlay_image(overlay, alpha, background):
     cv2.addWeighted(overlay, alpha, output, 1 - alpha, 0, output)
 
     return output
+
+
+def convert_banded_to_unique_colors(band_img, band_img_orig, mask):
+    img = np.asarray(list(band_img))
+
+    if len(band_img.shape) == 3:
+        black = np.zeros(band_img.shape[2])
+    else:
+        black = 0
+
+    for y in range(band_img.shape[0]):
+        for x in range(band_img.shape[1]):
+
+            # If the image colors match, use the band_img color,
+            # otherwise, use BLACK.
+            if np.array_equal(band_img_orig[y, x], mask[y, x]):
+                color = band_img[y, x]
+            else:
+                color = black
+
+            img[y, x] = color
+
+    return img
 
 
 def build_mask(source_filename=DEFAULT_SOURCE_FILENAME, 
@@ -127,13 +161,16 @@ def build_mask(source_filename=DEFAULT_SOURCE_FILENAME,
 
     # Create the K_IMAGE and then turn it into a banded image, and finally bitwise "AND" the images together
     k_image = try_k_means(source_image, k_value)
-    banded_image = create_banding_color(k_image)
-    final_mask = cv2.bitwise_and(banded_image, k_image)
+    banded_image, banded_image2 = create_banding_color(k_image)
+    final_mask = cv2.bitwise_and(banded_image2, k_image)
+    final_mask = convert_banded_to_unique_colors(banded_image, banded_image2, final_mask)
+
 
     # Do the same thing for greyscale
     k_image_gray = cv2.cvtColor(k_image, cv2.COLOR_BGR2GRAY)
-    banded_gray = create_banding_gray(k_image_gray)
-    final_mask_gray = cv2.bitwise_and(banded_gray, k_image_gray)
+    banded_gray, banded_gray2 = create_banding_gray(k_image_gray)
+    final_mask_gray = cv2.bitwise_and(banded_gray2, k_image_gray)
+    final_mask_gray = convert_banded_to_unique_colors(banded_gray, banded_gray2, final_mask_gray)
 
     # Add the bottom 35 rows of pixels back as a copy of the existing bottom 35 pixels
     k_image = np.vstack((k_image, k_image[-35:, :]))

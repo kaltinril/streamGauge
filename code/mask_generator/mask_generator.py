@@ -70,6 +70,9 @@ def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
     img = np.asarray(list(image))
 
     # sample an width by band_size area
+    color_old = []
+    band_color = np.asarray([10, 10, 10])
+
     for i in range(0, img.shape[0], band_size):
         roi = img[i:i+band_size, :]
 
@@ -80,8 +83,14 @@ def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
             color.append(array_position)
 
         combined_color = (color[0], color[1], color[2])
-        img[i:i+band_size, :] = combined_color
 
+        if color_old != combined_color:
+            color_old = combined_color
+            band_color *= 2
+
+        img[i:i+band_size, :] = band_color
+
+    print(band_color)
     return img
 
 

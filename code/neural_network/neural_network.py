@@ -14,8 +14,8 @@ def train(data_loc):
     data, metadata, bands = hg.load_hogs(data_loc)
 
     #build ANN object
-    ann = sk.MLPClassifier(hidden_layer_sizes=100, activation='logistic', learning_rate_init=.01, max_iter=10000,
-                           batch_size=200)   # lots of other options exist, check documentation
+    ann = sk.MLPClassifier(hidden_layer_sizes=100, activation='logistic', learning_rate_init=.001, max_iter=100000,
+                           batch_size=200, tol=.00000001)   # lots of other options exist, check documentation
     # train the ANN
     ann.fit(data, bands.ravel())
 
@@ -26,7 +26,7 @@ def train(data_loc):
     ann_file.close()
 
 
-def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride = 45):
+def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride=15):
     # load the weights and prepare objects
     ann_file = open(ann_loc, 'rb')
     ann = pickle.load(ann_file)
@@ -48,16 +48,18 @@ def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, 
             for pixels_per_cell in pixels_per_cell_list:
                 hog_info = hg.make_hog_partial(cur_roi, orientations, pixels_per_cell, cells_per_block)
                 hog_info_total.append(hog_info)
-            color_hist = hg.create_color_histogram(cur_roi_color)
+
+            #color_hist = hg.create_color_histogram(cur_roi_color)
 
             # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
-            hog_info_total = hog_info_total + color_hist  # In Python this is joining the two arrays
+            #color_hist = np.array(color_hist).flatten()
             hog_info_total = np.array(hog_info_total).flatten()
+            #hog_info_total = np.append(hog_info_total, color_hist)
 
             # run hog through ann to get classification, and store it
             roi_predictions[y, x] = ann.predict(hog_info_total.reshape(1, -1))
             # if x % 100 == 0:
-            print("ROI | x: ", x*stride, " y: ", y*stride, " predict: ", roi_predictions[y,x])
+            print("ROI | x: ", x*stride, " y: ", y*stride, " predict: ", roi_predictions[y, x])
 
     # using roi classification, classify pixels
     pixel_predictions = np.zeros((img.shape[0], img.shape[1]))
@@ -102,12 +104,12 @@ def view_predict(base_image, pixel_prediction):
     for y in range(pixel_prediction.shape[0]):
         for x in range(pixel_prediction.shape[1]):
             if pixel_prediction[y,x] >= 0:
-                color = colors[int(pixel_prediction[y,x])]
+                color = colors[int(pixel_prediction[y, x])]
             else:
                 color = (0, 0, 0)
             print("DISPLAY X: ", x, " Y: ", y)
-            overlay[y,x] = color
-    cv2.addWeighted(base_image, 0.8, overlay, 1 - 0.8, 0, overlay)
+            overlay[y, x] = color
+    cv2.addWeighted(base_image, 0.8, overlay, 1 - 0.8, 0, overlay)  # apply region predictions with some transparency over the base image
     cv2.imshow("Pixel Classification", overlay)
     cv2.waitKey()
 
@@ -120,8 +122,9 @@ if __name__ == '__main__':
             data_loc = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator\\HOG Files"
             train(data_loc)
         else:
-            filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\HOGTest\\Spartan - Cell\\images_63780012_20180119130234_IMAG0002-100-2.JPG"
+            filename = r"C:/Users/HarrelsonT/PycharmProjects/StreamGauge/code/image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
             img = cv2.imread(filename)
+            assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             pixel_predictions = predict("../ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)])
             view_predict(img, pixel_predictions)

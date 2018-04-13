@@ -43,6 +43,7 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
     print("Creating ROI HOGs")
 
     image_grey = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+    stability_mask = cv2.cvtColor(stability_mask, cv2.COLOR_BGR2GRAY)
     band_map = np.unique(stability_mask)
     # Asserts for debugging and enforcing data rules for parameters
     assert stability_mask.shape[0:2] == image_grey.shape, "Mask and Image different sizes, must be same size (excluding color channel)"
@@ -80,21 +81,23 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                     region_coords = (cur_offset_x + cur_region_x*region_size[0], cur_offset_y + cur_region_y*region_size[1])
                     masked_region = stability_mask[region_coords[1]:region_coords[1]+region_size[1],
                                                    region_coords[0]:region_coords[0]+region_size[0]]
-                    image_region = image_grey[region_coords[1]:region_coords[1] + region_size[1],
-                                   region_coords[0]:region_coords[0]+region_size[0]]
+                    image_region = image_grey[region_coords[1]:region_coords[1]+region_size[1],
+                                              region_coords[0]:region_coords[0]+region_size[0]]
 
                     # this can be changed to return counts of each unique entry, so we can calculate percents
                     unique, unique_counts = np.unique(masked_region, return_counts=True)
                     sum_unique = region_size[0]*region_size[1]
                     unique_percents = unique_counts/sum_unique  # The percent of the region occupied by each type of mask
-                    if unique_percents.max() < region_threshold:
+                    most_common_index = np.argmax(unique_counts)
+                    band[0], = np.where(band_map == unique[most_common_index])
+                    if unique_percents.max() < region_threshold or band[0] == 0:
                         # if banded then skip whole row, otherwise just skip current ROI
                         if banded:
                             break
                         else:
                             continue
-                    most_common_index = np.argmax(unique_counts)
-                    band[0], = np.where(band_map == unique[most_common_index])
+
+
 
                     # create hog for region
                     # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
@@ -230,9 +233,9 @@ def PCA(data_in, dim_out, standardize=True):
 
 if __name__ == '__main__':
     # Simple Example Use Scenario
-    filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
-    # filename_and_path = r"../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
-    mask_filename = r"../mask_generator/mask.png"
+    # filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
+    filename_and_path = r"../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
+    mask_filename = r"../mask_generator/gray-mask.png"
     path, filename = os.path.split(filename_and_path)
     filename_minus_ext, ext = os.path.splitext(filename)
     image_color = cv2.imread(filename_and_path)

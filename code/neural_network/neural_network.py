@@ -14,8 +14,8 @@ def train(data_loc):
     data, metadata, bands = hg.load_hogs(data_loc)
 
     #build ANN object
-    ann = sk.MLPClassifier(hidden_layer_sizes=100, activation='logistic', learning_rate_init=.001, max_iter=100000,
-                           batch_size=200, tol=.00000001)   # lots of other options exist, check documentation
+    ann = sk.MLPClassifier(hidden_layer_sizes=200, activation='logistic', learning_rate_init=0.01, max_iter=500000,
+                           batch_size=2000, tol=.00000001, verbose=True, beta_1=0.9, beta_2=0.999, alpha=0.0001)   # lots of other options exist, check documentation
     # train the ANN
     ann.fit(data, bands.ravel())
 
@@ -26,7 +26,7 @@ def train(data_loc):
     ann_file.close()
 
 
-def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride=15):
+def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride=45):
     # load the weights and prepare objects
     ann_file = open(ann_loc, 'rb')
     ann = pickle.load(ann_file)
@@ -122,7 +122,8 @@ if __name__ == '__main__':
             data_loc = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator\\HOG Files"
             train(data_loc)
         else:
-            filename = r"C:/Users/HarrelsonT/PycharmProjects/StreamGauge/code/image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
+            #filename = r"C:/Users/HarrelsonT/PycharmProjects/StreamGauge/code/image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
+            filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\image_subtractor\\images\\images_64273512_20180122124538_IMAG0810-100-810.JPG"
             img = cv2.imread(filename)
             assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

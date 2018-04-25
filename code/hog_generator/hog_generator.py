@@ -69,8 +69,8 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
     for cur_offset_x in range(0, region_size[0], offset_step[0]):
         for cur_offset_y in range(0, region_size[1], offset_step[1]):
             # looks at each tile of the grid with the current offset to produce ROIs
-            for cur_region_y in range(0, image_grey.shape[0]//region_size[0]):
-                for cur_region_x in range(0, image_grey.shape[1]//region_size[1]):
+            for cur_region_y in range(0, image_grey.shape[0]//region_size[1]):
+                for cur_region_x in range(0, image_grey.shape[1]//region_size[0]):
                     hog_info_total = []
                     # Set initial band value to -1 to ensure it is obvoius if something goes wrong and band isnt set
                     # For some reason, np.savez does not always save numbers if they aernt in ndarrays
@@ -97,8 +97,6 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                         else:
                             continue
 
-
-
                     # create hog for region
                     # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
                     for pixels_per_cell in pixels_per_cell_list:
@@ -107,14 +105,14 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                         hog_info_total.append(hog_info)
 
                     # Create the histogram of colors for this region, we only need to do this once for the X/Y area
-                    #color_image_region = color_image[region_coords[1]:region_coords[1] + region_size[1],
-                    #                                 region_coords[0]:region_coords[0] + region_size[0]]
-                    #color_hist = create_color_histogram(color_image_region)
+                    color_image_region = color_image[region_coords[1]:region_coords[1] + region_size[1],
+                                                    region_coords[0]:region_coords[0] + region_size[0]]
+                    # color_hist = create_color_histogram(color_image_region)
 
                     # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
-                    #color_hist = np.array(color_hist).flatten()
+                    # color_hist = np.array(color_hist).flatten()
                     hog_info_total = np.array(hog_info_total).flatten()
-                    #hog_info_total = np.append(hog_info_total, color_hist)
+                    # hog_info_total = np.append(hog_info_total, color_hist)
 
                     # format the string for the filename
                     new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
@@ -224,17 +222,19 @@ def PCA(data_in, dim_out, standardize=True):
     :return: Returns an ndarray having the same number of rows as data_in, but dim_out number of columns
     """
     data_out = data_in
+    ss = StandardScaler()
     pca = decomposition.PCA(n_components=dim_out)
     if standardize:
-        data_out = StandardScaler().fit_transform(data_in)
+        data_out = ss.fit_transform(data_in)
     data_out = pca.fit_transform(data_out)
-    return data_out
+    return data_out, pca, ss
 
 
 if __name__ == '__main__':
     # Simple Example Use Scenario
     # filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
-    filename_and_path = r"../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
+    filename_and_path = r"../image_subtractor/images/images_64269229_20180122120038_IMAG0804-100-804.JPG"
+    # filename_and_path = r"../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
     mask_filename = r"../mask_generator/gray-mask.png"
     path, filename = os.path.split(filename_and_path)
     filename_minus_ext, ext = os.path.splitext(filename)

@@ -1,5 +1,5 @@
 import sys
-sys.path.append(r'C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator')
+sys.path.append(r'../hog_generator')
 import numpy as np
 import hog_generator as hg
 import sklearn.neural_network as sk
@@ -8,8 +8,10 @@ import time
 from skimage.feature import hog
 import cv2
 
+
 def train(data_loc):
     # retrieve data from files
+    print(data_loc)
     data, metadata, bands = hg.load_hogs(data_loc)
     dataPCA, pca, ss = hg.PCA(data, 10)
 
@@ -66,7 +68,7 @@ def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, 
             # run hog through ann to get classification, and store it
             roi_predictions[y, x] = ann.predict(hog_info_total.reshape(1, -1))
             # if x % 100 == 0:
-            print("ROI | x: ", x*stride, " y: ", y*stride, " predict: ", roi_predictions[y, x])
+            # print("ROI | x: ", x*stride, " y: ", y*stride, " predict: ", roi_predictions[y, x])
 
     # using roi classification, classify pixels
     pixel_predictions = np.zeros((img.shape[0], img.shape[1]))
@@ -130,14 +132,12 @@ if __name__ == '__main__':
         user_input = input("Train or Predict: ")
         user_input = user_input.lower()
         if user_input == 'train':
-            data_loc = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\hog_generator\\HOG Files"
+            data_loc = "../hog_generator/HOG Files"
             pca, ss = train(data_loc)
         else:
-            # filename = r"C:/Users/HarrelsonT/PycharmProjects/StreamGauge/code/image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
-            # filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\image_subtractor\\images\\images_64273512_20180122124538_IMAG0810-100-810.JPG"
-            filename = r"C:\\Users\\HarrelsonT\\PycharmProjects\\StreamGauge\\code\\image_subtractor\\images\\_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
+            filename = "../../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
             img = cv2.imread(filename)
             assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            pixel_predictions = predict("../ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)], pca=pca, ss=ss)
+            pixel_predictions = predict("../../neural_network/ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)], pca=pca, ss=ss)
             view_predict(img, pixel_predictions)

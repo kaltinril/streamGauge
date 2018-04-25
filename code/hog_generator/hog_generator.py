@@ -201,6 +201,18 @@ def save_hogs(hog_info, region_coords, band, output_file):
     output_file.write('\n')
 
 
+def load_hogs_csv(directory):
+    all_hogs = []
+
+    # Load images from folders in loop
+    for filename in os.listdir(directory):
+        combined_filename = os.path.join(directory, filename)
+        all_hogs.append(np.loadtxt(combined_filename, delimiter=','))
+
+    all_hogs = np.vstack(all_hogs)
+
+    return all_hogs
+
 def load_hogs(folder_dir):
     """
     Retrieves the data from all .npz files (compressed or otherwise) in a folder, and returns the data and filenames
@@ -266,6 +278,10 @@ def PCA(data_in, dim_out, standardize=True):
 
 
 if __name__ == '__main__':
+    # Test loading the data
+    #result = load_hogs_csv('C:/temp')
+    #print(result.shape)
+
     # Simple Example Use Scenario
     # filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
     #filename_and_path = r"../image_subtractor/images/images_64269229_20180122120038_IMAG0804-100-804.JPG"

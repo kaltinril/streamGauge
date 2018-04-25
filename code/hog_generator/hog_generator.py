@@ -69,6 +69,8 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
     total_calc = 0
     total_save = 0
 
+    output_file = open('C:/temp/' + image_filename + "_hog.csv", 'w')
+
     # shifts grid by offset to get slightly different pictures
     for cur_offset_x in range(0, region_size[0], offset_step[0]):
         for cur_offset_y in range(0, region_size[1], offset_step[1]):
@@ -131,12 +133,16 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
 
                     # save hog info, alongside other relevant info (pixel coords, base image file name)
                     start_time = time.time()
-                    np.savez_compressed(new_filename, hog_info=hog_info_total, band=band)
+                    save_hogs(hog_info_total, region_coords, band[0], output_file)
+                    #np.savez_compressed(new_filename, hog_info=hog_info_total, band=band)
                     total_save += time.time() - start_time
+
 
     print("Done Creating ROI HOGs")
     print("Total Calculation: ", total_calc)
     print("Total Save:", total_save)
+
+    output_file.close()
 
 
 def create_color_histogram(image, bins=8):
@@ -179,6 +185,20 @@ def make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_bloc
     hog_info = np.mean(hog_info, axis=0)
 
     return hog_info
+
+
+# Save the hog information for a single HOG/Region
+# Along with the coordinates, and the band prediction.
+def save_hogs(hog_info, region_coords, band, output_file):
+    csv_hog_info = ','.join([('%f' % num).rstrip('0').rstrip('.') for num in hog_info])
+    csv_region_coords = ','.join(['%d' % num for num in region_coords])
+
+    output_file.write(str(band))
+    output_file.write(',')
+    output_file.write(str(csv_hog_info))
+    output_file.write(',')
+    output_file.write(str(csv_region_coords))
+    output_file.write('\n')
 
 
 def load_hogs(folder_dir):

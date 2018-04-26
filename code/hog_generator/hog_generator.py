@@ -138,12 +138,12 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                     save_hogs(hog_info_total, region_coords, band[0], output_file)
                     total_save += time.time() - start_time
 
-    print("Done Creating ROI HOGs")
-    print("Total time for file:", total_calc + total_save)
-    print("Total Calculation+Hog: ", total_calc)
-    print("Total Calculation:", total_calc-total_hog)
-    print("Total Hog:", total_hog)
-    print("Total Save:", total_save)
+    print(" Done Creating ROI HOGs")
+    print("  Total time for file:", total_calc + total_save)
+    print("  Total Calculation+Hog: ", total_calc)
+    print("  Total Calculation:", total_calc-total_hog)
+    print("  Total Hog:", total_hog)
+    print("  Total Save:", total_save)
 
     output_file.close()
 
@@ -300,20 +300,21 @@ def PCA(data_in, dim_out, standardize=True):
     data_out = pca.fit_transform(data_out)
     return data_out, pca, ss
 
-
-if __name__ == '__main__':
-    # Simple Example Use Scenario
-    # filename_and_path = r"../image_subtractor/images/images_63796657_20180119143035_IMAG0089-100-89.JPG"
-    #filename_and_path = r"../image_subtractor/images/images_64269229_20180122120038_IMAG0804-100-804.JPG"
-    # filename_and_path = r"../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
-    filename_and_path = "../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
+def run_all_hogs(directory):
     mask_filename = r"../mask_generator/gray-mask.png"
-    path, filename = os.path.split(filename_and_path)
-    filename_minus_ext, ext = os.path.splitext(filename)
-    image_color = cv2.imread(filename_and_path)
 
     # real mask
     mask = cv2.imread(mask_filename)
 
-    create_hog_regions(image_color, mask, filename_minus_ext, (45, 45), [(3, 3), (5, 5), (9, 9)], (9, 9), banded=False)
+    for filename in os.listdir(directory):
+        print("Start: ", filename)
+        filename_minus_ext, ext = os.path.splitext(filename)
+        combined_filename = os.path.join(directory, filename)
+        image_color = cv2.imread(combined_filename)
+
+        create_hog_regions(image_color, mask, filename_minus_ext, (12, 12), [(3, 3)], (3, 3), banded=False)
+
+
+if __name__ == '__main__':
+    run_all_hogs("../image_subtractor/images/")
 

@@ -59,15 +59,20 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
         assert offset_step[0] < region_size[0] and offset_step[1] < region_size[1], "Offset Step too large"
 
     # Create the folder to put the HOG files if none exists. Try except handles race condition, unlike straight makedirs
+    output_directory = './HOG_Files/'
     try:
-        os.makedirs("./HOG Files")
+        os.makedirs(output_directory)
     except OSError as e:
         if e.errno != errno.EEXIST:
             print("Could not create or find HOG Files directory")
             raise
 
+    # Time counters
     total_calc = 0
     total_save = 0
+    total_hog = 0
+
+    output_file = open(output_directory + image_filename + "_hog.csv", 'w')
 
     # shifts grid by offset to get slightly different pictures
     for cur_offset_x in range(0, region_size[0], offset_step[0]):
@@ -76,7 +81,6 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
             for cur_region_y in range(0, image_grey.shape[0]//region_size[1]):
                 for cur_region_x in range(0, image_grey.shape[1]//region_size[0]):
                     start_time = time.time()
-
 
                     hog_info_total = []
                     # Set initial band value to -1 to ensure it is obvoius if something goes wrong and band isnt set
@@ -98,6 +102,7 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                     most_common_index = np.argmax(unique_counts)
                     band[0], = np.where(band_map == unique[most_common_index])
                     if unique_percents.max() < region_threshold or band[0] == 0:
+                        total_calc += time.time() - start_time
                         # if banded then skip whole row, otherwise just skip current ROI
                         if banded:
                             break
@@ -106,10 +111,13 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
 
                     # create hog for region
                     # unraveled shape=(n_blocks_y, n_blocks_x, cells_in_block_y, cells_in_block_x, orientations)
+                    start_hog = time.time()
                     for pixels_per_cell in pixels_per_cell_list:
                         hog_info = make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_block)
 
                         hog_info_total.append(hog_info)
+
+                    total_hog += time.time() - start_hog
 
                     # Create the histogram of colors for this region, we only need to do this once for the X/Y area
                     # color_image_region = color_image[region_coords[1]:region_coords[1] + region_size[1],
@@ -121,22 +129,23 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                     hog_info_total = np.array(hog_info_total).flatten()
                     # hog_info_total = np.append(hog_info_total, color_hist)
 
-                    # format the string for the filename
-                    new_filename = ("./HOG Files/%d_%d_%d_%d_%s_hogInfo.npz" % (cur_region_x, cur_region_y,
-                                    cur_offset_x, cur_offset_y, image_filename))
-
                     total_calc += time.time() - start_time
 
                     assert band[0] >= 0
 
                     # save hog info, alongside other relevant info (pixel coords, base image file name)
                     start_time = time.time()
-                    np.savez_compressed(new_filename, hog_info=hog_info_total, band=band)
+                    save_hogs(hog_info_total, region_coords, band[0], output_file)
                     total_save += time.time() - start_time
 
     print("Done Creating ROI HOGs")
-    print("Total Calculation: ", total_calc)
+    print("Total time for file:", total_calc + total_save)
+    print("Total Calculation+Hog: ", total_calc)
+    print("Total Calculation:", total_calc-total_hog)
+    print("Total Hog:", total_hog)
     print("Total Save:", total_save)
+
+    output_file.close()
 
 
 def create_color_histogram(image, bins=8):
@@ -178,7 +187,54 @@ def make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_bloc
     # and average the blocks
     hog_info = np.mean(hog_info, axis=0)
 
+    # Code taken from the SKLEARN testing package, apears to produce the same values
+    # https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/tests/test_hog.py
+    # lines 185-193
+
+    # reshape resulting feature vector to matrix with N columns (each
+    # column corresponds to one direction),
+    #hog_info = hog_info.reshape(-1, orientations)
+
+    # compute mean values in the resulting feature vector for each
+    # direction, these values should be almost equal to the global mean
+    # value (since the image contains a circle), i.e., all directions have
+    # same contribution to the result
+    #hog_info = np.mean(hog_info, axis=0)
+
     return hog_info
+
+
+# Save the hog information for a single HOG/Region
+# Along with the coordinates, and the band prediction.
+def save_hogs(hog_info, region_coords, band, output_file):
+    csv_hog_info = ','.join([('%f' % num).rstrip('0').rstrip('.') for num in hog_info])
+    csv_region_coords = ','.join(['%d' % num for num in region_coords])
+
+    output_file.write(str(band))
+    output_file.write(',')
+    output_file.write(str(csv_hog_info))
+    output_file.write(',')
+    output_file.write(str(csv_region_coords))
+    output_file.write('\n')
+
+
+def load_hogs_csv(directory):
+    """
+    Retrieves the data from all files in a folder, and returns the data and filenames
+
+    :param directory: A string that represents the path of the folder containing the hog files
+    :return: An ndarray containing the all the instances of the hog data, the coordinates, bands
+    """
+    all_hogs = []
+
+    # Load images from folders in loop
+    for filename in os.listdir(directory):
+        combined_filename = os.path.join(directory, filename)
+        all_hogs.append(np.loadtxt(combined_filename, delimiter=','))
+
+    all_hogs = np.vstack(all_hogs)
+
+    return all_hogs
 
 
 def load_hogs(folder_dir):

@@ -11,15 +11,18 @@ import cv2
 
 def train(data_loc):
     # retrieve data from files
-    print(data_loc)
-    data, metadata, bands = hg.load_hogs(data_loc)
+    all_hogs = hg.load_hogs_csv(data_loc)
+    bands = all_hogs[:, 0]
+    data = all_hogs[:, 1:-2]
+    metadata = all_hogs[:, -2:]
+
     dataPCA, pca, ss = hg.PCA(data, 10)
 
     #build ANN object
     ann = sk.MLPClassifier(hidden_layer_sizes=200, activation='tanh', learning_rate_init=0.01, max_iter=500000,
                            batch_size=2000, tol=.00000001, verbose=True, beta_1=0.9, beta_2=0.999, alpha=0.0001)   # lots of other options exist, check documentation
     # train the ANN
-    ann.fit(dataPCA, bands.ravel())
+    ann.fit(dataPCA, bands)
 
     # predictions = ann.predict(dataPCA)
     # for p in predictions:
@@ -27,7 +30,7 @@ def train(data_loc):
 
     # save the ann
     timestr = '1' #time.strftime("%Y%m%d-%H%M%S")
-    ann_file = open('../ann_' + timestr + '.pkl', 'wb')
+    ann_file = open('ann_' + timestr + '.pkl', 'wb')
     pickle.dump(ann, ann_file)
     ann_file.close()
     return pca, ss
@@ -68,7 +71,7 @@ def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, 
             # run hog through ann to get classification, and store it
             roi_predictions[y, x] = ann.predict(hog_info_total.reshape(1, -1))
             # if x % 100 == 0:
-            # print("ROI | x: ", x*stride, " y: ", y*stride, " predict: ", roi_predictions[y, x])
+            print("ROI | x: ", x*stride, " y: ", y*stride, " predict: ", roi_predictions[y, x])
 
     # using roi classification, classify pixels
     pixel_predictions = np.zeros((img.shape[0], img.shape[1]))
@@ -132,12 +135,12 @@ if __name__ == '__main__':
         user_input = input("Train or Predict: ")
         user_input = user_input.lower()
         if user_input == 'train':
-            data_loc = "../hog_generator/HOG Files"
+            data_loc = "../hog_generator/HOG_Files"
             pca, ss = train(data_loc)
         else:
-            filename = "../../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
+            filename = "../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
             img = cv2.imread(filename)
             assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            pixel_predictions = predict("../../neural_network/ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)], pca=pca, ss=ss)
+            pixel_predictions = predict("../neural_network/ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)], pca=pca, ss=ss)
             view_predict(img, pixel_predictions)

@@ -172,11 +172,13 @@ def build_mask(source_filename=DEFAULT_SOURCE_FILENAME,
     final_mask_gray = cv2.bitwise_and(banded_gray2, k_image_gray)
     final_mask_gray = convert_banded_to_unique_colors(banded_gray, banded_gray2, final_mask_gray)
 
-    # Add the bottom 35 rows of pixels back as a copy of the existing bottom 35 pixels
-    k_image = np.vstack((k_image, k_image[-35:, :]))
-    banded_image = np.vstack((banded_image, banded_image[-35:, :]))
-    final_mask = np.vstack((final_mask, final_mask[-35:, :]))
-    final_mask_gray = np.vstack((final_mask_gray, final_mask_gray[-35:, :]))
+    # Add the bottom 35 rows of pixels back as a black bar of values of "0"
+    black_bar_color = np.zeros((35, k_image.shape[1], 3))
+    black_bar_gray = np.zeros((35, k_image.shape[1]))
+    k_image = np.vstack((k_image, black_bar_color))
+    banded_image = np.vstack((banded_image, black_bar_color))
+    final_mask = np.vstack((final_mask, black_bar_color))
+    final_mask_gray = np.vstack((final_mask_gray, black_bar_gray))
 
     # Save the images
     cv2.imwrite("kmean-" + output_filename, k_image)

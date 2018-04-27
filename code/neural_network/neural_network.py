@@ -11,14 +11,17 @@ import cv2
 
 def train(data_loc):
     # retrieve data from files
+    print("Loading hog data...")
     all_hogs = hg.load_hogs_csv(data_loc)
     bands = all_hogs[:, 0]
     data = all_hogs[:, 1:-2]
     metadata = all_hogs[:, -2:]
 
-    dataPCA, pca, ss = hg.PCA(data, 10)
+    print("Performing PCA...")
+    dataPCA, pca, ss = hg.PCA(data, 9)
 
     #build ANN object
+    print("Training ANN...")
     ann = sk.MLPClassifier(hidden_layer_sizes=200, activation='tanh', learning_rate_init=0.01, max_iter=500000,
                            batch_size=2000, tol=.00000001, verbose=True, beta_1=0.9, beta_2=0.999, alpha=0.0001)   # lots of other options exist, check documentation
     # train the ANN
@@ -36,7 +39,7 @@ def train(data_loc):
     return pca, ss
 
 
-def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride=5, pca=None, ss=None):
+def predict(ann_loc, color_img, roi_size, pixels_per_cell_list, orientations=9, cells_per_block=(2, 2), stride=3, pca=None, ss=None):
     # load the weights and prepare objects
     ann_file = open(ann_loc, 'rb')
     ann = pickle.load(ann_file)
@@ -139,8 +142,10 @@ if __name__ == '__main__':
             pca, ss = train(data_loc)
         else:
             filename = "../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
+            #filename = "../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
+
             img = cv2.imread(filename)
             assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            pixel_predictions = predict("../neural_network/ann_1.pkl", img, (45, 45), [(3, 3), (5, 5), (9, 9)], pca=pca, ss=ss)
+            pixel_predictions = predict("../neural_network/ann_1.pkl", img, (12, 12), [(3, 3)], pca=pca, ss=ss)
             view_predict(img, pixel_predictions)

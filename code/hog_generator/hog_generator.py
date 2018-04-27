@@ -207,6 +207,15 @@ def make_hog_partial(image_region, orientations, pixels_per_cell, cells_per_bloc
 # Save the hog information for a single HOG/Region
 # Along with the coordinates, and the band prediction.
 def save_hogs(hog_info, region_coords, band, output_file):
+    """
+    Saves the HOG generated from the single ROI to the file
+
+    :param hog_info: the data from the HOG to be saved
+    :param region_coords: The X,Y position of the upper left of the ROI
+    :param band: This is the "Y" value or prediction/category/classification
+    :param output_file: already opened file to save to
+    :return: nothing
+    """
     csv_hog_info = ','.join([('%f' % num).rstrip('0').rstrip('.') for num in hog_info])
     csv_region_coords = ','.join(['%d' % num for num in region_coords])
 
@@ -237,37 +246,6 @@ def load_hogs_csv(directory):
     return all_hogs
 
 
-def load_hogs(folder_dir):
-    """
-    Retrieves the data from all .npz files (compressed or otherwise) in a folder, and returns the data and filenames
-
-    :param folder_dir: A string that represents the path of the folder containing the .npz files
-    :return: An ndarray containing the all the instances of the hog data, and a list containing the file names, in the
-    same order
-    """
-    hog_list = []
-    band_list = []
-    file_list = []
-    os.chdir(folder_dir)    # TODO: handle folder not found issues
-    for file in glob.glob("*.npz"):
-        hog_info, band = load_hog(file)
-        hog_list.append(hog_info)
-        band_list.append(band[0])
-        file_list.append(file)
-    return np.vstack(hog_list), file_list, np.vstack(band_list)
-
-
-def load_hog(file):
-    """
-    Retrieves the data from a single .npz file
-
-    :param file: A string representing the name of a .npz file, or the file object itself.
-    :return: The ndarray contained in the file, decompressed, extracted, and ready to use.
-    """
-    loaded_file = np.load(file)
-    return loaded_file['hog_info'], loaded_file['band']   # TODO: handle file not found issues
-
-
 def parse_filename(filename):
     """
     Garners metadata for a HOG file that indicates what portion of the ROI is from, and which image file it was taken
@@ -292,6 +270,11 @@ def PCA(data_in, dim_out, standardize=True):
     :param standardize: A boolean value representing whether or not to standardize the data before running PCA.
     :return: Returns an ndarray having the same number of rows as data_in, but dim_out number of columns
     """
+
+    # We can't have more components than we do features to start with
+    if dim_out > data_in.shape[1]:
+        dim_out = data_in.shape[1]
+
     data_out = data_in
     ss = StandardScaler()
     pca = decomposition.PCA(n_components=dim_out)
@@ -299,6 +282,15 @@ def PCA(data_in, dim_out, standardize=True):
         data_out = ss.fit_transform(data_in)
     data_out = pca.fit_transform(data_out)
     return data_out, pca, ss
+
+
+def resize_image_to_mask(image, mask):
+    r = mask.shape[1] / image.shape[1]
+    dim = (mask.shape[1], int(image.shape[0] * r))
+    resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+
+    return resized
+
 
 def run_all_hogs(directory):
     mask_filename = r"../mask_generator/gray-mask.png"
@@ -312,6 +304,17 @@ def run_all_hogs(directory):
         combined_filename = os.path.join(directory, filename)
         image_color = cv2.imread(combined_filename)
 
+        # Make sure the image was loaded, if not, probably an invalid file format (text file?)
+        if image_color is None:
+            print('Invalid file:', filename)
+            continue
+
+        # Make sure the images are the correct dimensions, if not, resize to mask size
+        if mask.shape != image_color.shape:
+            print('Image size mismatch, resizing:', filename)
+            image_color = resize_image_to_mask(image_color, mask)
+
+        # Generate and save ALL hogs for this image
         create_hog_regions(image_color, mask, filename_minus_ext, (12, 12), [(3, 3)], (3, 3), banded=False)
 
 

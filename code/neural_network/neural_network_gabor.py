@@ -27,6 +27,9 @@ def train(data_loc):
     dataPCA = data
     #dataPCA, pca, ss = hg.PCA(data, 9)
 
+    print("shuffling the data")
+    #np.random.shuffle(data)
+
 
     #build ANN object
     print("Training ANN...")
@@ -47,14 +50,12 @@ def train(data_loc):
     return pca, ss
 
 
-def predict(ann_loc, color_img, combined_filename):
+def predict(ann_loc, color_img, combined_filename, mask):
     # load the weights and prepare objects
     ann_file = open(ann_loc, 'rb')
     ann = pickle.load(ann_file)
     ann_file.close()
 
-    mask_filename = r"../mask_generator/gray-mask.png"
-    mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
     filters = hg.build_filters()
 
     all_data = hg.run_gabor(color_img, filters, mask, combined_filename, orientations=16, mode='validation')
@@ -85,7 +86,7 @@ def view_predict(base_image, pixel_prediction):
                 color = (0, 0, 0)
             #print("DISPLAY X: ", x, " Y: ", y)
             overlay[y, x] = color
-    cv2.addWeighted(base_image, 0.8, overlay, 1 - 0.8, 0, overlay)  # apply region predictions with some transparency over the base image
+    cv2.addWeighted(base_image, 0.7, overlay, 1 - 0.7, 0, overlay)  # apply region predictions with some transparency over the base image
     cv2.imshow("Pixel Classification", overlay)
     cv2.waitKey()
 
@@ -100,11 +101,25 @@ if __name__ == '__main__':
             data_loc = "../hog_generator/HOG_GABOR"
             pca, ss = train(data_loc)
         else:
-            filename = "../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
-            #filename = "../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
+            #user_input = input("Filename?: ")
+            #user_input = user_input.lower()
+            #filename = "../image_subtractor/images/_usr_local_apps_scripts_bcj_webCam_images_64583391_20180124100038_IMAG1168-100-1168.JPG"
+            filename = "../image_subtractor/images/images_63816752_20180119161134_IMAG0190-100-190.JPG"
+            #filename = r"C:\Users\thisisme1\Downloads\Wingscape A-20180124T184024Z-001\Wingscape A\WSCT4903.JPG"
+            #filename = r"C:\Users\thisisme1\Downloads\Wingscape A-20180124T184024Z-001\Wingscape A\WSCT5003.JPG"
+            #filename = "../image_subtractor/images/images_64273512_20180122124538_IMAG0810-100-810.JPG"
 
             img = cv2.imread(filename)
             assert img is not None
             gs = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            pixel_predictions = predict("../neural_network/ann_1.pkl", img, filename)
+
+            mask_filename = r"../mask_generator/gray-mask.png"
+            mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
+
+            # Make sure the images are the correct dimensions, if not, resize to mask size
+            if mask.shape[0:2] != img.shape[0:2]:
+                print('Image size mismatch, resizing:', filename)
+                img = hg.resize_image_to_mask(img, mask)
+
+            pixel_predictions = predict("../neural_network/ann_1.pkl", img, filename, mask)
             view_predict(img, pixel_predictions)

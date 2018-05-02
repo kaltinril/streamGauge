@@ -333,7 +333,7 @@ def run_gabor_on_directory(directory, mask):
             image_color = resize_image_to_mask(image_color, mask)
 
         # Generate and save ALL hogs for this image
-        result = run_gabor(image_color, filters, mask, combined_filename, orientations, mode='validation')
+        result = run_gabor(image_color, filters, mask, combined_filename, orientations, mode='training')
 
     print("Total Runtime:", time.time() - start_time)
 
@@ -344,7 +344,8 @@ if __name__ == '__main__':
     # real mask
     mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
 
-    run_gabor_on_directory('../image_subtractor/images/', mask)
+    # run_gabor_on_directory(r'../image_subtractor/images/', mask)
+    run_gabor_on_directory(r'C:\Users\thisisme1\Downloads\Spartan - Cell-20180124T191933Z-001\Spartan - Cleaned/', mask)
     #
     # try:
     #     image_filename = sys.argv[1]

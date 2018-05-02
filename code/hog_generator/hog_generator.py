@@ -9,6 +9,7 @@ import errno
 from sklearn import decomposition
 from sklearn.preprocessing import StandardScaler
 import time
+from gabor_filter import GaborFilter
 
 
 # need to clip total_image to be same size as stability mask before using this function
@@ -120,14 +121,14 @@ def create_hog_regions(color_image, stability_mask, image_filename, region_size,
                     total_hog += time.time() - start_hog
 
                     # Create the histogram of colors for this region, we only need to do this once for the X/Y area
-                    # color_image_region = color_image[region_coords[1]:region_coords[1] + region_size[1],
-                    #                                 region_coords[0]:region_coords[0] + region_size[0]]
-                    # color_hist = create_color_histogram(color_image_region)
+                    color_image_region = color_image[region_coords[1]:region_coords[1] + region_size[1],
+                                                     region_coords[0]:region_coords[0] + region_size[0]]
+                    color_hist = create_color_histogram(color_image_region)
 
                     # Add the 3 colors bins to the end of the hog_info_total array then convert and flatten
-                    # color_hist = np.array(color_hist).flatten()
+                    color_hist = np.array(color_hist).flatten()
                     hog_info_total = np.array(hog_info_total).flatten()
-                    # hog_info_total = np.append(hog_info_total, color_hist)
+                    hog_info_total = np.append(hog_info_total, color_hist)
 
                     total_calc += time.time() - start_time
 
@@ -239,6 +240,7 @@ def load_hogs_csv(directory):
     # Load images from folders in loop
     for filename in os.listdir(directory):
         combined_filename = os.path.join(directory, filename)
+        print("Loading:", filename)
         all_hogs.append(np.loadtxt(combined_filename, delimiter=','))
 
     all_hogs = np.vstack(all_hogs)
@@ -277,7 +279,7 @@ def PCA(data_in, dim_out, standardize=True):
 
     data_out = data_in
     ss = StandardScaler()
-    pca = decomposition.PCA(n_components=dim_out)
+    pca = decomposition.PCA(0.95)  #n_components=dim_out)
     if standardize:
         data_out = ss.fit_transform(data_in)
     data_out = pca.fit_transform(data_out)
@@ -298,6 +300,8 @@ def run_all_hogs(directory):
     # real mask
     mask = cv2.imread(mask_filename)
 
+    gabor = GaborFilter()  # Use the default values
+
     for filename in os.listdir(directory):
         print("Start: ", filename)
         filename_minus_ext, ext = os.path.splitext(filename)
@@ -314,8 +318,11 @@ def run_all_hogs(directory):
             print('Image size mismatch, resizing:', filename)
             image_color = resize_image_to_mask(image_color, mask)
 
+        # Run a Gabor filter on the image to make the features turn out easier for hog detection
+        image_color_gabor = gabor.process_threaded(image_color)
+
         # Generate and save ALL hogs for this image
-        create_hog_regions(image_color, mask, filename_minus_ext, (12, 12), [(3, 3)], (3, 3), banded=False)
+        create_hog_regions(image_color_gabor, mask, filename_minus_ext, (12, 12), [(3, 3)], (3, 3), banded=False)
 
 
 if __name__ == '__main__':

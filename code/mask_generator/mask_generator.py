@@ -26,6 +26,13 @@ DEFAULT_BAND_SIZE = 20
 
 # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_ml/py_kmeans/py_kmeans_opencv/py_kmeans_opencv.html
 def try_k_means(img_color, k_value=DEFAULT_K_VALUE):
+    """
+    Take an input image, and run the OpenCV kmeans implementation against it to reduce the image into K_VALUE colors.
+
+    :param img_color:   The color image to run the kmeans on
+    :param k_value:     The number of centroids/categories
+    :return:            The Clustered result image
+    """
     reshaped_image = img_color.reshape((-1, 3))
 
     # convert to np.float32
@@ -49,6 +56,15 @@ def try_k_means(img_color, k_value=DEFAULT_K_VALUE):
 
 
 def create_banding_gray(image, band_size=DEFAULT_BAND_SIZE):
+    """
+    Take an input mask image and create a image with bands of the max value for that row in grayscale
+
+    :param image:       The source image to run the banding on
+    :param band_size:   The size to check horizontally for similar color values
+    :return:
+                        img = The banded image values 20, 40, 80, etc
+                        img2 = The banded image values, but using the original color values from kmeans
+    """
     img = np.asarray(list(image))
     img2 = np.asarray(list(image))
 
@@ -76,6 +92,15 @@ def create_banding_gray(image, band_size=DEFAULT_BAND_SIZE):
 
 
 def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
+    """
+    Take an input mask image and create a image with bands of the max value for that row in Color
+
+    :param image:       The source image to run the banding on
+    :param band_size:   The size to check horizontally for similar color values
+    :return:
+                        img = The banded image values 20, 40, 80, etc
+                        img2 = The banded image values, but using the original color values from kmeans
+    """
     img = np.asarray(list(image))
     img2 = np.asarray(list(image))
 
@@ -106,6 +131,14 @@ def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
 
 
 def overlay_image(overlay, alpha, background):
+    """
+    Take two images and put 1 "ontop" of the other by making the top one slightly transparent
+
+    :param overlay:         Image to put ontop
+    :param alpha:           Transparency value
+    :param background:      Image to put behind
+    :return:                Combined image
+    """
     output = np.asarray(list(background))
     cv2.addWeighted(overlay, alpha, output, 1 - alpha, 0, output)
 
@@ -113,6 +146,16 @@ def overlay_image(overlay, alpha, background):
 
 
 def convert_banded_to_unique_colors(band_img, band_img_orig, mask):
+    """
+    Take the banded image, the banded with original color values, and the original kmeans mask
+        Produce a final image with the banded colors, except when there is overlap between bands
+        in which case make the color BLACK so we can exclude it during the Gabor filter generation.
+
+    :param band_img:        
+    :param band_img_orig:
+    :param mask:
+    :return:
+    """
     img = np.asarray(list(band_img))
 
     if len(band_img.shape) == 3:

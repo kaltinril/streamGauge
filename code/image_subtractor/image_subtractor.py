@@ -203,7 +203,7 @@ def print_help(script_name):
 def load_arguments(argv):
     """
     Load all arguments that were passed in on the command line, and set parameters used in other locations
-    
+
     :param argv:    The arguments from the command l ine
     :return:        The set values or defaults for: input_directory, output_filename, average_width, average_height, save_blur
     """

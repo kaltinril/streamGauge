@@ -2,7 +2,7 @@
 Software Requirements Specification
 for
 Machine Learning based Stream Gauge
-Version 2.0 approved
+Version 3.0 approved
 Prepared by Timothy Harrelson and Jeremy Swartwood
 Capstone Project, UAA
 02/01/2018
@@ -42,6 +42,7 @@ Name	Date	Reason For Changes	Version
 Timothy Harrelson Jeremy Swartwood	02/01/2018	Initial version	1.0
 Timothy Harrelson Jeremy Swartwood	02/25/2018	Add changes from classmates during review.
 Add Figures from Visio diagram.	2.0
+Timothy Harrelson Jeremy Swartwood	05/02/2018	Adjust based on Gabor filter instead of HOG	3.0
 
 
  
@@ -83,7 +84,7 @@ Operation will be done on a Windows OS, with limited or non-existent GPU.
 2.5	Design and Implementation Constraints
 This product will use Python with OpenCV.  Images will be any format accepted by OpenCV.
 2.6	User Documentation
-A user manual will be created with the following information:
+A user manual or README will be created with the following information:
 •	The input format to the software.
 •	The commands to execute the software.
 •	The output format of the software.
@@ -111,7 +112,7 @@ Inputs:
 Images in a standard image format are expected.
 
 Outputs:
-A binary mask where a 1 at a specific index in the matrix represents water at the pixel in the same location in the source image.  Conversely 0 represents non-water.
+An output array of predictions is returned from an input image that is to be validated.  Additionally an image with these predictions overlaid is displayed.
 4.	System Features
 4.1	Image Processing
 4.1.1	Description and Priority
@@ -128,18 +129,13 @@ e.	Save the final averaged image as the mask for the next step.
 a.	The output mask is run through K-means to find the closest color values, which creates four separate color values or Regions.
 b.	Bands are created across the image by taking the highest color value for that row.
 c.	The K-means mask and the bands are ANDED together to create the final mask. Overlapping regions are color value 0.
-3.	Use a Histogram of Oriented Gradients (HOG) algorithm to extract features from sub-sections of the ROI.
-a.	The HOG is OpenCV’s implementation of code Dalal, N. and Triggs, B. created.
-b.	Each region is defined as “weights” for 9 orientation angles (0, 20, 40, … 160).
-c.	For example:
-i.	An image with a single vertical line would have values in the 5th bucket corresponding to 80-99 degrees.
-ii.	Whereas a horizontal line would come back as belonging partially to buckets 1 and 9 (0-19 and 160-180 respectively)
-4.	Use the features from the HOG to train an Artificial Neural Network (ANN) in an unsupervised fashion to build the classifier.  The trained ANN will be used to later classify new images.
+3.	Use the OpenCV implementation of Gabor Filters algorithm to extract features from sub-sections of the ROI.
+4.	Use the features from the Gabor filters to train an Artificial Neural Network (ANN) in an unsupervised fashion to build the classifier.  The trained ANN will be used to later classify new images.
 4.1.2	Stimulus/Response Sequences
 A user will need to provide a batch of images to the Image Processor and start the process.
 4.1.3	Functional Requirements
 REQ-1:	Images must be all in a single folder, or they will not be processed.
-REQ-2:	Images must be the same dimensions, if not an error will be presented to the user.
+REQ-2:	Images that are different dimensions will be resized to the common image size.
 REQ-3:	Images must be taken sequentially in time without large gaps.  The reason is to prevent drastic changes in the low pass temporal filter that could generate an inaccurate mask.  A time frame of less than 2 hours between images, because of tide, is suggested.
 REQ-4:	Images must be named sequentially to match the order taken in time.
 REQ-5:	Images must be of the same site location and taken from the same camera position.
@@ -165,7 +161,6 @@ Accuracy of pixel classification.
 6.	Other Requirements
 Appendix A: Glossary
 Pixel Classification - A machine learning algorithm that determines if a pixel falls into a specific category.
-HOG - Histogram of Oriented Gradients
 ROI - Regions of Interest
 ANN - Artificial Neural Network
 
@@ -175,14 +170,14 @@ Appendix B: Figures
 Figure 1 – Overview for Image Processing
  
 Figure 2 – Overview for Image Classifying
- 
+
 Figure 3 – Process of applying low-pass filter for Image Processing
  
 Figure 4 – Details regarding the low-pass filter averaging.
  
 Figure 5 – Process of generating an output mask.
- 
+
 Figure 6 – Process to sample sections of an image to generate HOGs for.
- 
-Figure 7 – Example on how extracted ROI are turned into HOGs.
+
+Figure 7 – Example on how extracted ROI are turned into Gabor Filter feature vectors.
 

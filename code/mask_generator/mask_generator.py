@@ -18,7 +18,7 @@ Usage:
 
 # Global Defaults
 DEBUG = False
-DEFAULT_SOURCE_FILENAME = "../image_subtractor/all_combined2.png"
+DEFAULT_SOURCE_FILENAME = "../image_subtractor/all_combined.png"
 DEFAULT_OUTPUT_FILENAME = "mask.png"
 DEFAULT_K_VALUE = 3
 DEFAULT_BAND_SIZE = 20
@@ -223,29 +223,27 @@ def extra_debug_image_analysis(banded_image, k_image, output_filename):
 
 
 def print_help(script_name):
-    print("Usage:   " + script_name + " -f <filename> -a <serverAddress> -p <port> -e <error%>")
+    print("Usage:   " + script_name + " -h -o <output_mask_filename> -i <input_all_subtracted_filename> -k <kvalue> -b <bands>")
     print("")
     print(" -h, --help")
     print("    This message is printed only")
     print(" -o, --outfile")
-    print("    Output image from the subtracted and averaged indir images")
-    print("    default: all_combined.png")
-    print(" -i, --indir")
-    print("    Input directory containing files to pair-wise subtract and average")
-    print(" -w, --width")
-    print("    Width of the region to blur")
-    print("    default: 21")
-    print(" -e, --height")
-    print("    Height of the region to blur")
-    print("    default: 21")
-    print(" -s, --save")
-    print("    Save each blurred image to a sub-directory")
-    print("    WARNING: This will take longer.")
+    print("    Output mask filename")
+    print("    default: mask.png")
+    print(" -i, --infile")
+    print("    Input all averaged image generated from image_subtractor.py")
+    print("    default: ../image_subtractor/all_combined.png")
+    print(" -k, --kvalue")
+    print("    The number of 'bands' to target with the k-means algorithm")
+    print("    default: 3")
+    print(" -b, --banding")
+    print("    The height of the horizontal area to make all the same color")
+    print("    default: 20")
     print(" -d, --debug")
     print("    Turn debug mode on")
     print("    WARNING: This will slow down the process")
     print("")
-    print("Example: " + script_name + ' -o outputfile.png -i "C:\\images\\"')
+    print("Example: " + script_name + ' -o mask.png -i "C:\\images\\"')
 
 
 def load_arguments(argv):

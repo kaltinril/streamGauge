@@ -166,7 +166,7 @@ def average_then_subtract_images(image_directory,
 
 
 def print_help(script_name):
-    print("Usage:   " + script_name + " -f <filename> -a <serverAddress> -p <port> -e <error%>")
+    print("Usage:   " + script_name + " -o <output_image> -i <input_directory> -w <width> -e <height> -s <save>")
     print("")
     print(" -h, --help")
     print("    This message is printed only")

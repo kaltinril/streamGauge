@@ -24,26 +24,13 @@ AVERAGE_HEIGHT_DEFAULT = 21
 SAVE_BLUR_DEFAULT = False
 
 
-# Method:   valid_image
-# Purpose:  Verify images have the same size
-# Input:
-#           image1 - First image to check file_size, used as the assumed CORRECT file_size
-#           image2 - Second image to check the file_size
-#
-# Output:
-#           Boolean (True/False) if the images are valid (The same size)
-# TODO: Maybe resize the larger image to the smaller image, instead of tossing it??
-# TODO: Maybe ignore images that are "TOO different"
-def valid_images(image1, image2, image2_name):
-    if image1.shape != image2.shape:
-        print("Mismatching Dimensions, skipping: [" + image2_name + "].")
-        print("(Y, X, Channels) = Image1:", str(image1.shape), " Image2:", str(image2.shape))
-        return False
-
-    return True
-
-
 def create_output_directory(image_directory):
+    """
+    Create a new folder/directory if it does not already exist
+
+    :param image_directory:     Directory to put the output folder in
+    :return:                    Return the image_directory combined with the output folder
+    """
     output_directory = os.path.join(image_directory, "output")
     if not os.path.exists(output_directory):
         print("Making output directory to save the Blurred Images...")
@@ -54,6 +41,13 @@ def create_output_directory(image_directory):
 
 
 def save_blurred_image(output_directory, filename, image):
+    """
+    Given an output directory and filename, save the passed in imager to that filename in that directory
+
+    :param output_directory:    Where the output filename should be saved
+    :param filename:            What the output filename should be
+    :param image:               The output image to save
+    """
     output_filename = os.path.join(output_directory, filename)
 
     print("Saving image:", output_filename) if DEBUG else None
@@ -61,6 +55,15 @@ def save_blurred_image(output_directory, filename, image):
 
 
 def load_and_blur_image(input_image, pairs, average_width, average_height):
+    """
+    Load an image in, run the OpenCV BLUR method on that image to perform low pass filtering.
+
+    :param input_image:     Image to blur
+    :param pairs:           Debug print information
+    :param average_width:   Size to blur together Horizontally
+    :param average_height:  Size to blur together Vertically
+    :return:                The blurred image
+    """
     image = cv2.imread(input_image)
     if image is None:
         print("ERROR: Invalid file, skipping:", input_image)
@@ -72,6 +75,13 @@ def load_and_blur_image(input_image, pairs, average_width, average_height):
 
 
 def resize_image_to_mask(image, mask):
+    """
+    If an image size does not match the mask, resize the image to match the mask.
+
+    :param image:   Image to run through Gabor Filter activations
+    :param mask:    The mask that is used to determine which bands each ROI belongs to
+    :return:        The resized image
+    """
     r = mask.shape[1] / image.shape[1]
     dim = (mask.shape[1], int(image.shape[0] * r))
     resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
@@ -79,27 +89,26 @@ def resize_image_to_mask(image, mask):
     return resized
 
 
-# Method:   average_then_subtract_images
-# Purpose:  Find the temporal differences between a set of images in a directory
-# Input:
-#           image_directory - Source directory that contains the images to be blurred, subtracted, and averaged.
-#           average_width - Width of blur region
-#           average_height - Height of blur region
-#
-# Output:
-#           Combined image output of all image pairs blurred, subtracted, and averaged.
-#
-# Steps:    1. Go through all images in the image_directory 2 at a time.
-#           2. Blur both images average_width and average_height (reduce small differences in the images)
-#           3. Subtract each pair of images color values to produce the absolute value difference.
-#           4. Add all these pair values together and divide by the total number of pairs (Average)
-#           5. Return an image of the final result
-# Link:
-#           https://docs.opencv.org/master/d4/d13/tutorial_py_filtering.html
 def average_then_subtract_images(image_directory,
                                  average_width=AVERAGE_WIDTH_DEFAULT,
                                  average_height=AVERAGE_HEIGHT_DEFAULT,
                                  save_blur=SAVE_BLUR_DEFAULT):
+    """
+    Find the temporal differences between a set of images in a directory
+     Steps:    1. Go through all images in the image_directory 2 at a time.
+               2. Blur both images average_width and average_height (reduce small differences in the images)
+               3. Subtract each pair of images color values to produce the absolute value difference.
+               4. Add all these pair values together and divide by the total number of pairs (Average)
+               5. Return an image of the final result
+     Link:
+               https://docs.opencv.org/master/d4/d13/tutorial_py_filtering.html
+
+    :param image_directory:     Source directory that contains the images to be blurred, subtracted, and averaged.
+    :param average_width:       Width of blur region
+    :param average_height:      Height of blur region
+    :param save_blur:           Boolean: Should the image be saved?
+    :return:                    Combined image output of all image pairs blurred, subtracted, and averaged.
+    """
     out_image = None
     image1 = None
     image2 = None
@@ -128,11 +137,6 @@ def average_then_subtract_images(image_directory,
             image2 = load_and_blur_image(combined_filename, pairs, average_width, average_height)
             if image2 is None:
                 continue
-
-        # Make sure the images are the same size
-        #if not valid_images(image1, image2, combined_filename):
-        #    image2 = None
-        #    continue
 
         # Make sure the images are the correct dimensions, if not, resize to mask size
         if image1.shape[0:2] != image2.shape[0:2]:
@@ -166,6 +170,11 @@ def average_then_subtract_images(image_directory,
 
 
 def print_help(script_name):
+    """
+    Print out command line usage and arguments
+
+    :param script_name: Name of the script, used just to make the help print more specific to this file
+    """
     print("Usage:   " + script_name + " -o <output_image> -i <input_directory> -w <width> -e <height> -s <save>")
     print("")
     print(" -h, --help")
@@ -192,6 +201,12 @@ def print_help(script_name):
 
 
 def load_arguments(argv):
+    """
+    Load all arguments that were passed in on the command line, and set parameters used in other locations
+
+    :param argv:    The arguments from the command l ine
+    :return:        The set values or defaults for: input_directory, output_filename, average_width, average_height, save_blur
+    """
     global DEBUG
     script_name = argv[0]  # Snag the first argument (The script name)
 

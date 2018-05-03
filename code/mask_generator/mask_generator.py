@@ -26,6 +26,13 @@ DEFAULT_BAND_SIZE = 20
 
 # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_ml/py_kmeans/py_kmeans_opencv/py_kmeans_opencv.html
 def try_k_means(img_color, k_value=DEFAULT_K_VALUE):
+    """
+    Take an input image, and run the OpenCV kmeans implementation against it to reduce the image into K_VALUE colors.
+
+    :param img_color:   The color image to run the kmeans on
+    :param k_value:     The number of centroids/categories
+    :return:            The Clustered result image
+    """
     reshaped_image = img_color.reshape((-1, 3))
 
     # convert to np.float32
@@ -49,6 +56,15 @@ def try_k_means(img_color, k_value=DEFAULT_K_VALUE):
 
 
 def create_banding_gray(image, band_size=DEFAULT_BAND_SIZE):
+    """
+    Take an input mask image and create a image with bands of the max value for that row in grayscale
+
+    :param image:       The source image to run the banding on
+    :param band_size:   The size to check horizontally for similar color values
+    :return:
+                        img = The banded image values 20, 40, 80, etc
+                        img2 = The banded image values, but using the original color values from kmeans
+    """
     img = np.asarray(list(image))
     img2 = np.asarray(list(image))
 
@@ -76,6 +92,15 @@ def create_banding_gray(image, band_size=DEFAULT_BAND_SIZE):
 
 
 def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
+    """
+    Take an input mask image and create a image with bands of the max value for that row in Color
+
+    :param image:       The source image to run the banding on
+    :param band_size:   The size to check horizontally for similar color values
+    :return:
+                        img = The banded image values 20, 40, 80, etc
+                        img2 = The banded image values, but using the original color values from kmeans
+    """
     img = np.asarray(list(image))
     img2 = np.asarray(list(image))
 
@@ -106,6 +131,14 @@ def create_banding_color(image, band_size=DEFAULT_BAND_SIZE):
 
 
 def overlay_image(overlay, alpha, background):
+    """
+    Take two images and put 1 "ontop" of the other by making the top one slightly transparent
+
+    :param overlay:         Image to put ontop
+    :param alpha:           Transparency value
+    :param background:      Image to put behind
+    :return:                Combined image
+    """
     output = np.asarray(list(background))
     cv2.addWeighted(overlay, alpha, output, 1 - alpha, 0, output)
 
@@ -113,6 +146,16 @@ def overlay_image(overlay, alpha, background):
 
 
 def convert_banded_to_unique_colors(band_img, band_img_orig, mask):
+    """
+    Take the banded image, the banded with original color values, and the original kmeans mask
+        Produce a final image with the banded colors, except when there is overlap between bands
+        in which case make the color BLACK so we can exclude it during the Gabor filter generation.
+
+    :param band_img:        Banded image with values like 20, 40, 80
+    :param band_img_orig:   Banded image with values like 0, 1, 2, 3
+    :param mask:            Kmeans mask with values like 0, 1, 2, 3
+    :return:                Banded mask with cut out BLACK area's that are overlapping from the other bands
+    """
     img = np.asarray(list(band_img))
 
     if len(band_img.shape) == 3:
@@ -138,6 +181,18 @@ def convert_banded_to_unique_colors(band_img, band_img_orig, mask):
 def build_mask(source_filename=DEFAULT_SOURCE_FILENAME, 
                k_value=DEFAULT_K_VALUE,
                output_filename=DEFAULT_OUTPUT_FILENAME):
+    """
+    1. Take in the source all_averaged.png file
+    2. run kmeans with the K-value clusters
+    3. produce the bands based on the highest k-value in that area
+    4. Create a bitwise_and image to remove contradicting sections
+    5. Save the final mask
+
+    :param source_filename: Image to use as the input to the kmeans mask generation
+    :param k_value:         Number of clusters the kmeans should use
+    :param output_filename: The output final mask
+    :return:                The output final mask
+    """
     # Load image in
     source_image_gray = cv2.imread(source_filename, cv2.IMREAD_GRAYSCALE)
     source_image = cv2.imread(source_filename)
@@ -194,6 +249,13 @@ def build_mask(source_filename=DEFAULT_SOURCE_FILENAME,
 
 
 def extra_debug_image_analysis(banded_image, k_image, output_filename):
+    """
+    Create an image that can be used to compare and contrast how the bands will look in the final mask
+
+    :param banded_image:    Banded mask image without kimage combination or bitwise_and
+    :param k_image:         KMeans mask
+    :param output_filename: Output file to save the comparison to
+    """
     print("DEBUG: Creating side by side quad image")
 
     # Shrink k_image and banded_image down so we can fit them side by side easier
@@ -223,6 +285,11 @@ def extra_debug_image_analysis(banded_image, k_image, output_filename):
 
 
 def print_help(script_name):
+    """
+    Print out command line usage and arguments
+
+    :param script_name: Name of the script, used just to make the help print more specific to this file
+    """
     print("Usage:   " + script_name + " -h -o <output_mask_filename> -i <input_all_subtracted_filename> -k <kvalue> -b <bands>")
     print("")
     print(" -h, --help")
@@ -247,6 +314,12 @@ def print_help(script_name):
 
 
 def load_arguments(argv):
+    """
+    Load all arguments that were passed in on the command line, and set parameters used in other locations
+
+    :param argv:    The arguments from the command line
+    :return:        The set values or defaults for: source_filename, output_filename, k_value
+    """
     global DEBUG
     script_name = argv[0]  # Snag the first argument (The script name)
 

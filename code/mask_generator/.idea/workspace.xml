@@ -14,8 +14,8 @@
       <file leaf-file-name="mask_generator.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/mask_generator.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="242">
-              <caret line="153" column="28" lean-forward="false" selection-start-line="153" selection-start-column="28" selection-end-line="153" selection-end-column="28" />
+            <state relative-caret-position="520">
+              <caret line="184" column="0" lean-forward="false" selection-start-line="184" selection-start-column="0" selection-end-line="193" selection-end-column="49" />
               <folding>
                 <element signature="e#0#69#0" expanded="true" />
               </folding>
@@ -180,7 +180,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mask_generator.py</url>
-          <line>268</line>
+          <line>292</line>
           <option name="timeStamp" value="13" />
         </line-breakpoint>
       </breakpoints>
@@ -334,8 +334,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mask_generator.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="242">
-          <caret line="153" column="28" lean-forward="false" selection-start-line="153" selection-start-column="28" selection-end-line="153" selection-end-column="28" />
+        <state relative-caret-position="520">
+          <caret line="184" column="0" lean-forward="false" selection-start-line="184" selection-start-column="0" selection-end-line="193" selection-end-column="49" />
           <folding>
             <element signature="e#0#69#0" expanded="true" />
           </folding>

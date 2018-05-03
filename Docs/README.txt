@@ -2,6 +2,15 @@ To Install:
 Ensure that the folders image_subtractor, mask_generator, hog_generator, and neural_network are in the
 same directory. Python3 must be installed on the device with OpenCV and Scikit, and NumPy modules also installed.
 
+Setup and Data Prep:
+* Make sure the images used to create the mask are photos taken sequentially in time from the same camera location (like
+a timelapse photo sequence).
+
+* Make sure all the images to be processed and turned into training data are from the same camera location. Try to
+eliminate bad images (such as nighttime photos, when people are stnading in front of the lense, etc) for best results.
+
+------------------------------
+
 To Generate Mask:
 1. Run image_subtractor.py
     a. Command line arguments may be given to specify filenames and other parameters. See documention

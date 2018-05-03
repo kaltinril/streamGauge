@@ -25,3 +25,6 @@ To Predict using ANN:
 4. Predictions should appear as an image popup, and the function will return the data as an array (see documentation)
 
 
+Tuning the parameters for the gabor filter can be done by modifying parameters for functions in the file
+gabor_threads_roi.py. See documentation for function details.
+

@@ -71,6 +71,14 @@ def load_and_blur_image(input_image, pairs, average_width, average_height):
     return cv2.blur(src=image, ksize=(average_width, average_height))
 
 
+def resize_image_to_mask(image, mask):
+    r = mask.shape[1] / image.shape[1]
+    dim = (mask.shape[1], int(image.shape[0] * r))
+    resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+
+    return resized
+
+
 # Method:   average_then_subtract_images
 # Purpose:  Find the temporal differences between a set of images in a directory
 # Input:
@@ -122,9 +130,14 @@ def average_then_subtract_images(image_directory,
                 continue
 
         # Make sure the images are the same size
-        if not valid_images(image1, image2, combined_filename):
-            image2 = None
-            continue
+        #if not valid_images(image1, image2, combined_filename):
+        #    image2 = None
+        #    continue
+
+        # Make sure the images are the correct dimensions, if not, resize to mask size
+        if image1.shape[0:2] != image2.shape[0:2]:
+            print('Image size mismatch, resizing:', combined_filename)
+            image2 = resize_image_to_mask(image2, image1)
 
         # Save the blurred image2
         if save_blur:

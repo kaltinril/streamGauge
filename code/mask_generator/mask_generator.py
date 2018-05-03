@@ -18,7 +18,7 @@ Usage:
 
 # Global Defaults
 DEBUG = False
-DEFAULT_SOURCE_FILENAME = "../image_subtractor/all_combined2.png"
+DEFAULT_SOURCE_FILENAME = "../image_subtractor/all_combined.png"
 DEFAULT_OUTPUT_FILENAME = "mask.png"
 DEFAULT_K_VALUE = 3
 DEFAULT_BAND_SIZE = 20

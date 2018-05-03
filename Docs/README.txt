@@ -18,6 +18,7 @@ To Generate Mask:
 1. Run image_subtractor.py
     a. Command line arguments may be given to specify filenames and other parameters. See documention
 2. Run mask_generator.py
+    a. Command line arguments may be given to specify filenames and other parameters. See documention
 
 To Generate Training Data:
 1. Ensure mask has been generated

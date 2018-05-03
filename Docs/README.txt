@@ -6,19 +6,19 @@ Setup and Data Prep:
 * Images used for mask and training data should have the same camera location and dimensions.
 
 * Make sure the images used to create the mask are photos taken sequentially in time from the same camera location (like
-a timelapse photo sequence).
+a time-lapse photo sequence).
 
 * Make sure all the images to be processed and turned into training data are from the same camera location. Try to
-eliminate bad images (such as nighttime photos, when people are standing in front of the lense, etc) for best results.
+eliminate bad images (such as nighttime photos, when people are standing in front of the lens, etc) for best results.
 
 * Retraining the ANN for each camera location will produce the best results.
 ------------------------------
 
 To Generate Mask:
 1. Run image_subtractor.py
-    a. Command line arguments may be given to specify filenames and other parameters. See documention
+    a. Command line arguments may be given to specify filenames and other parameters. See documentation
 2. Run mask_generator.py
-    a. Command line arguments may be given to specify filenames and other parameters. See documention
+    a. Command line arguments may be given to specify filenames and other parameters. See documentation
 
 To Generate Training Data:
 1. Ensure mask has been generated

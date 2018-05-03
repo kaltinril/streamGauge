@@ -9,7 +9,7 @@ Setup and Data Prep:
 a timelapse photo sequence).
 
 * Make sure all the images to be processed and turned into training data are from the same camera location. Try to
-eliminate bad images (such as nighttime photos, when people are stnading in front of the lense, etc) for best results.
+eliminate bad images (such as nighttime photos, when people are standing in front of the lense, etc) for best results.
 
 * Retraining the ANN for each camera location will produce the best results.
 ------------------------------

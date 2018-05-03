@@ -8,6 +8,13 @@ import cv2
 
 
 def train(data_loc):
+    """
+    Load all Gabor filter feature data from the files in the data_loc folder,
+    Train a Artifical Nerual Network with that data
+    Save the trained model to a file ann_1.pk1
+
+    :param data_loc:    Folder where the csv files are located
+    """
     # retrieve data from files
     print("Loading hog data...")
     all_hogs = hg.load_hogs_csv(data_loc)
@@ -36,6 +43,16 @@ def train(data_loc):
 
 
 def predict(ann_loc, color_img, combined_filename, mask):
+    """
+    Load the trained ANN, run the Gabor histogram generation on the validation image, return the predicted band
+    values at each ROI area
+
+    :param ann_loc:             Location of the Trained NN file
+    :param color_img:           The image to use to validate with
+    :param combined_filename:   The filename of the color_img
+    :param mask:                The mask that was used for the training, not really used but passed into Gabor
+    :return:                    The predicted band values
+    """
     # load the weights and prepare objects
     ann_file = open(ann_loc, 'rb')
     ann = pickle.load(ann_file)
@@ -61,6 +78,12 @@ def predict(ann_loc, color_img, combined_filename, mask):
 
 
 def view_predict(base_image, pixel_prediction):
+    """
+    Overlay the predicted bands onto the original image for comparision and manual human evaluation
+
+    :param base_image:          The image that was used to validate
+    :param pixel_prediction:    The band predictions per ROI
+    """
     overlay = base_image.copy()
     colors = [(255, 255, 255), (0, 0, 255), (0, 255, 0), (255, 0, 0), (255, 0, 255)]
     print("Start Display")

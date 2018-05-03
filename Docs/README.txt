@@ -25,12 +25,12 @@ To Generate Training Data:
 
 To Train ANN:
 1. Ensure training data exists
-2. Run neural_network.py
+2. Run neural_network_gabor.py
 3. When prompted, type "train" and hit enter
 
 To Predict using ANN:
 1. Ensure ANN is trained
-2. Run neural_network.py
+2. Run neural_network_gabor.py
     a. You can train and predict the ANN without having to rerun the file, skip this step if this file is already
         running.
 3. When prompted, type "predict" and hit enter

@@ -3,12 +3,15 @@ Ensure that the folders image_subtractor, mask_generator, hog_generator, and neu
 same directory. Python3 must be installed on the device with OpenCV and Scikit, and NumPy modules also installed.
 
 Setup and Data Prep:
+* Images used for mask and training data should have the same camera location and dimensions.
+
 * Make sure the images used to create the mask are photos taken sequentially in time from the same camera location (like
 a timelapse photo sequence).
 
 * Make sure all the images to be processed and turned into training data are from the same camera location. Try to
 eliminate bad images (such as nighttime photos, when people are stnading in front of the lense, etc) for best results.
 
+* Retraining the ANN for each camera location will produce the best results.
 ------------------------------
 
 To Generate Mask:
